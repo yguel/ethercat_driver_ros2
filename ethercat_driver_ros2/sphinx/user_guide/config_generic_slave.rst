@@ -21,16 +21,16 @@ The :code:`GenericEcSlave` allows to configure the following options in the :cod
   * - :code:`sdo`
     - SDO data to be transferred at drive startup for configuration purposes.
   * - :code:`tpdo`
-    - Transmit PDO mapping configuration.
+    - Transmit PDO mapping configuration. Messages exchanged from the slave to the master. From the master point of view: the states of the slave.
   * - :code:`rpdo`
-    - Receive PDO mapping configuration.
+    - Receive PDO mapping configuration. Messages exchanged from the master to the slave. From the slave point of view: the commands.
   * - :code:`sm`
     - Sync Manager configuration.
 
 SDO configuration
 ~~~~~~~~~~~~~~~~~
 
-Service Data Objects (SDO) are used to setup the module at startup. This is done only one during the activation phase.
+Service Data Objects (SDO) are used to setup the module at startup. This is done only once during the activation phase.
 Each SDO has the following configuration flags:
 
 .. list-table::
@@ -72,11 +72,11 @@ Each PDO Channel has the following configuration flags:
   * - :code:`type`
     - Channel data type. Possible types: :code:`bool`, :code:`uint8`, :code:`int8`, :code:`uint16`, :code:`int16`, :code:`uint32`, :code:`uint32`, :code:`uint64`, :code:`uint64`, :code:`bitN` with N the number of bits required.
   * - :code:`command_interface`
-    - **Only for** :code:`rpdo`. Name of the command interface to be used inside :code:`ros2_control`.
+    - **Only for** :code:`tpdo`. Name of the command interface to be used inside :code:`ros2_control`.
   * - :code:`state_interface`
-    - **Only for** :code:`tpdo`. Name of the state interface to be used inside :code:`ros2_control`.
+    - **Only for** :code:`rpdo`. Name of the state interface to be used inside :code:`ros2_control`.
   * - :code:`default`
-    - **Only for** :code:`rpdo`. Default value to be send to the drive if data received on the command interface is :code:`NaN`.
+    - **Only for** :code:`tpdo`. Default value to be send to the drive if data received on the command interface is :code:`NaN`.
   * - :code:`mask`
     - Data mask, to be used with :code:`type` = :code:`bool`.
   * - :code:`factor`
