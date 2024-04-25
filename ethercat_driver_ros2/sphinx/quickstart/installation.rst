@@ -95,6 +95,19 @@ To do so:
      sudo ln -s /usr/local/etherlab/bin/ethercat /usr/bin/
      sudo ln -s /usr/local/etherlab/etc/init.d/ethercat /etc/init.d/ethercat
 
+    While doing the ``bootstrap`` command you may encounter the following warning:
+
+    .. code-block:: console
+
+      configure.ac:xxxx: warning: The macro `AC_HELP_STRING' is obsolete.
+      configure.ac:xxxx: You should run autoupdate.
+
+    You can fix it by running the following command (as suggested):
+
+    .. code-block:: console
+
+      sudo autoupdate
+
 
 * Create a new :code:`udev` rule:
 
