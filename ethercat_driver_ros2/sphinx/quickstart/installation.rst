@@ -36,7 +36,7 @@ To do so:
   2. In the security tab, disable secure boot.
   3. Save and exit.
 
-* Install required tools:
+* Step 1: Install required tools:
 
   .. code-block:: console
 
@@ -44,7 +44,7 @@ To do so:
     $ sudo apt-get upgrade
     $ sudo apt-get install git autoconf libtool pkg-config make build-essential net-tools
 
-* Setup sources for the EtherCAT Master:
+* Step 2: Setup sources for the EtherCAT Master:
 
   .. code-block:: console
 
@@ -55,7 +55,7 @@ To do so:
     $ sudo rm /etc/init.d/ethercat
     $ ./bootstrap  # to create the configure script
 
-* Configure, build and install libs and kernel modules:
+* Step 3: Configure, build and install libs and kernel modules:
 
   .. code-block:: console
 
@@ -65,7 +65,7 @@ To do so:
     $ sudo make modules_install install
     $ sudo depmod
 
-* Configure system:
+* Step 4: Configure system:
 
   .. code-block:: console
 
