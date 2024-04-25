@@ -14,17 +14,20 @@ Etherlab is a kernel module that is not signed by default.
 To allow the kernel to load unsigned modules, you need to disable secure boot.
 
 Verify if secure boot is enabled (you need to install ''mokutil'' first):
+
   .. code-block:: console
 
     $ sudo apt-get install mokutil
     $ mokutil --sb-state
 
 it should print:
+
   .. code-block:: console
 
     SecureBoot disabled
 
 if it prints:
+
   .. code-block:: console
 
     SecureBoot enabled
