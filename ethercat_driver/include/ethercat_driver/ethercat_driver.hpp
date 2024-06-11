@@ -65,7 +65,7 @@ public:
   ETHERCAT_DRIVER_PUBLIC
   hardware_interface::return_type write(const rclcpp::Time &, const rclcpp::Duration &) override;
 
-private:
+protected:
   std::vector<std::unordered_map<std::string, std::string>> getEcModuleParam(
     std::string & urdf, std::string component_name, std::string component_type);
 
@@ -83,7 +83,8 @@ private:
     "ethercat_interface", "ethercat_interface::EcSlave"};
 
   int control_frequency_;
-  ethercat_interface::EcMaster master_;
+
+  std::shared_ptr<ethercat_interface::EcMaster> master_;
   std::mutex ec_mutex_;
   bool activated_;
 };

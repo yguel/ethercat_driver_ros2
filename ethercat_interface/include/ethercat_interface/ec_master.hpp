@@ -31,7 +31,7 @@ namespace ethercat_interface
 class EcMaster
 {
 public:
-  explicit EcMaster(const int master = 0);
+  explicit EcMaster(const unsigned int master = 0);
   virtual ~EcMaster();
 
   /** \brief add a slave device to the master
@@ -90,7 +90,7 @@ public:
   void readData(uint32_t domain = 0);
   void writeData(uint32_t domain = 0);
 
-private:
+protected:
   /** true if running */
   volatile bool running_ = false;
 

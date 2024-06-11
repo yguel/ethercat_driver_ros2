@@ -54,7 +54,7 @@ EcMaster::DomainInfo::~DomainInfo()
 }
 
 
-EcMaster::EcMaster(const int master)
+EcMaster::EcMaster(const unsigned int master)
 {
   master_ = ecrt_request_master(master);
   if (master_ == NULL) {
@@ -110,7 +110,10 @@ void EcMaster::addSlave(uint16_t alias, uint16_t position, EcSlave * slave)
 
   slave_info_.push_back(slave_info);
 
-  // check if slave has pdos
+  // Setup PDOs registered by the slave.
+  // For each slave, PDOs are grouped by sync manager.
+  // For each active sync manager of the slave,
+  // register the associated set of PDOs.
   size_t num_syncs = slave->syncSize();
   const ec_sync_info_t * syncs = slave->syncs();
   if (num_syncs > 0) {
@@ -126,7 +129,7 @@ void EcMaster::addSlave(uint16_t alias, uint16_t position, EcSlave * slave)
       std::to_string(alias) + ":" + std::to_string(position));
   }
 
-  // check if slave registered any pdos for the domain
+  // Get all domains and associated pdos that the slave registers
   EcSlave::DomainMap domain_map;
   slave->domains(domain_map);
   for (auto & iter : domain_map) {
