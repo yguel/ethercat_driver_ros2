@@ -135,8 +135,8 @@ void download(
     response->success = false;
     response->sdo_return_message = return_stream.str();
     RCLCPP_ERROR(rclcpp::get_logger("ethercat_manager"), return_stream.str().c_str());
-    if (nullptr != data.target) {
-      delete[] data.target;
+    if (nullptr != data.data) {
+      delete[] data.data;
     }
     return;
   } catch (std::ios::failure & e) {
@@ -144,8 +144,8 @@ void download(
     response->success = false;
     response->sdo_return_message = return_stream.str();
     RCLCPP_ERROR(rclcpp::get_logger("ethercat_manager"), return_stream.str().c_str());
-    if (nullptr != data.target) {
-      delete[] data.target;
+    if (nullptr != data.data) {
+      delete[] data.data;
     }
     return;
   }
@@ -158,8 +158,8 @@ void download(
     response->success = false;
     RCLCPP_ERROR(rclcpp::get_logger("ethercat_manager"), return_stream.str().c_str());
     response->sdo_return_message = return_stream.str();
-    if (nullptr != data.target) {
-      delete[] data.target;
+    if (nullptr != data.data) {
+      delete[] data.data;
     }
     return;
   }
@@ -171,8 +171,8 @@ void download(
     response->success = false;
     RCLCPP_ERROR(rclcpp::get_logger("ethercat_manager"), return_stream.str().c_str());
     response->sdo_return_message = return_stream.str();
-    if (nullptr != data.target) {
-      delete[] data.target;
+    if (nullptr != data.data) {
+      delete[] data.data;
     }
     return;
   }
@@ -183,8 +183,8 @@ void download(
   response->success = true;
   response->sdo_return_message = return_stream.str();
 
-  if (nullptr != data.target) {
-    delete[] data.target;
+  if (nullptr != data.data) {
+    delete[] data.data;
   }
   RCLCPP_INFO(rclcpp::get_logger("ethercat_sdo_srv_server"), return_stream.str().c_str());
 }
