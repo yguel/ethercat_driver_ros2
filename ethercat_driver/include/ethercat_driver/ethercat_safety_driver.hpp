@@ -16,6 +16,8 @@
 #define ETHERCAT_DRIVER__ETHERCAT_SAFETY_DRIVER_HPP_
 
 #include <vector>
+#include <unordered_map>
+#include <string>
 
 #include "ethercat_driver/ethercat_driver.hpp"
 #include "ethercat_interface/ec_safety.hpp"
@@ -32,27 +34,33 @@ public:
   CallbackReturn on_init(const hardware_interface::HardwareInfo & info) override;
 
   ETHERCAT_DRIVER_PUBLIC
-  CallbackReturn on_configure(const rclcpp_lifecycle::State & previous_state) override;
-
-  ETHERCAT_DRIVER_PUBLIC
-  std::vector<hardware_interface::StateInterface> export_state_interfaces() override;
-
-  ETHERCAT_DRIVER_PUBLIC
-  std::vector<hardware_interface::CommandInterface> export_command_interfaces() override;
-
-  ETHERCAT_DRIVER_PUBLIC
   CallbackReturn on_activate(const rclcpp_lifecycle::State & previous_state) override;
 
-  ETHERCAT_DRIVER_PUBLIC
-  CallbackReturn on_deactivate(const rclcpp_lifecycle::State & previous_state) override;
-
-  ETHERCAT_DRIVER_PUBLIC
-  hardware_interface::return_type read(const rclcpp::Time &, const rclcpp::Duration &) override;
-
-  ETHERCAT_DRIVER_PUBLIC
-  hardware_interface::return_type write(const rclcpp::Time &, const rclcpp::Duration &) override;
+  // ETHERCAT_DRIVER_PUBLIC
+  // CallbackReturn on_deactivate(const rclcpp_lifecycle::State & previous_state) override;
 
 protected:
+  /**
+   * @brief Get safety module parameters from URDF
+   * @param urdf URDF string
+   * @param component_type Tag name in xml containing safety module declaration (default: safety)
+   * @return Vector of maps containing safety module parameters, each map corresponds to a safety module
+   */
+  std::vector<std::unordered_map<std::string, std::string>> getEcSafetyModuleParam(
+    const std::string & urdf,
+    const std::string & component_type = "safety");
+
+  /**
+   * @brief Get safety nets from URDF
+   * @param urdf URDF string
+   * @param component_type Tag name in xml containing safety module declaration (default: safety)
+   * @return Vector of safety nets
+   */
+  std::vector<ethercat_interface::EcSafetyNet> getEcSafetyNets(
+    const std::string & urdf,
+    const std::string & component_type = "safety");
+
+
   /** Indexes of modules inside ec_modules_ vector that are safety masters */
   std::vector<size_t> ec_safety_masters_;
   /** Indexes of modules inside ec_modules_ vector that are safety slaves only */

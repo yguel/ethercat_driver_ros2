@@ -1,0 +1,96 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+    <ros2_control name="ec_safety_test_config" type="system">
+        <hardware>
+            <plugin>ethercat_driver/EthercatDriver</plugin>
+            <param name="master_id">0</param>
+            <param name="control_frequency">100</param>
+        </hardware>
+
+        <safety>
+            <ec_module name="s2">
+                <plugin>ethercat_generic_plugins/GenericEcSlave</plugin>
+                <param name="alias">0</param>
+                <param name="position">1</param>
+                <param name="slave_config">$(find xy_unilivers_description)/config/safety_slave.yaml</param>
+            </ec_module>
+            <ec_module name="m1" type="safety_master">
+                <param name="alias">0</param>
+                <param name="position">0</param>
+                <param name="slave_config">$(find xy_unilivers_description)/config/safety_master.yaml</param>
+            </ec_module>
+            <ec_module name="m2" type="safety_master">
+                <param name="alias">0</param>
+                <param name="position">0</param>
+                <param name="slave_config">$(find xy_unilivers_description)/config/safety_master.yaml</param>
+            </ec_module>
+
+            <net name="n1">
+                <ec_safety_master>m1</ec_safety_master>
+                <transfer>
+                    <in ec_module="s1">0x607a</in>
+                    <out ec_module="s2">0x60ff</out>
+                    <size>18</size>
+                </transfer>
+                <transfer>
+                    <in ec_module="s1">0x707a</in>
+                    <out ec_module="s3">0x10ff</out>
+                    <size>42</size>
+                </transfer>
+            </net>
+
+            <net name="n2">
+                <ec_safety_master>m2</ec_safety_master>
+                <transfer>
+                    <in ec_module="q1">0x607a</in>
+                    <out ec_module="q2">0x60ff</out>
+                    <size>18</size>
+                </transfer>
+            </net>
+
+        </safety>
+
+        <sensor name="limit_switches">
+            <state_interface name="limit_switch_left" />
+            <state_interface name="limit_switch_right" />
+            <ec_module name="limit_switches_on_EL1018">
+                <plugin>ethercat_generic_plugins/GenericEcSlave</plugin>
+                <param name="alias">0</param>
+                <param name="position">6</param>
+                <param name="slave_config">$(find xy_unilivers_description)/config/beckhoff_el1018.yaml</param>
+            </ec_module>
+        </sensor>
+
+        <sensor name="encoder">
+            <state_interface name="position" />
+            <command_interface name="reset" />
+            <ec_module name="encoder_on_EL5101">
+                <plugin>ethercat_generic_plugins/GenericEcSlave</plugin>
+                <param name="alias">0</param>
+                <param name="position">2</param>
+                <param name="slave_config">$(find xy_unilivers_description)/config/beckhoff_el5101.yaml</param>
+            </ec_module>
+        </sensor>
+
+        <joint name="base_to_charriot">
+            <state_interface name="position" />
+            <state_interface name="velocity" />
+            <state_interface name="effort" />
+            <command_interface name="position" />
+            <command_interface name="velocity" />
+            <command_interface name="effort" />
+            <command_interface name="reset_fault" />
+            <ec_module name="MAXON_on_EPOS3">
+                <plugin>ethercat_generic_plugins/EcCiA402Drive</plugin>
+                <param name="alias">0</param>
+                <param name="position">0</param>
+                <!-- Available modes of operation = position 8, velocity 9, effort 10, homing 6 -->
+                <param name="mode_of_operation">9</param>
+                <!-- epos3  -->
+                <param name="slave_config">$(find xy_unilivers_description)/config/maxon_epos3.yaml</param>
+                <!-- epos4 -->
+                <!-- <param name="slave_config">$(find xy_unilivers_description)/config/maxon_epos4_50_5.yaml</param> -->
+            </ec_module>
+        </joint>
+    </ros2_control>
+</robot>

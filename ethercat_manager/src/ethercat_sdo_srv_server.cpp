@@ -13,6 +13,7 @@
 // limitations under the License.
 //
 // Author: Maciej Bednarczyk (mcbed.robotics@gmail.com)
+// Author: Manuel YGUEL      (yguel.robotics@gmail.com)
 
 #include <iostream>
 #include <iomanip>

@@ -67,7 +67,9 @@ public:
 
 protected:
   std::vector<std::unordered_map<std::string, std::string>> getEcModuleParam(
-    std::string & urdf, std::string component_name, std::string component_type);
+    const std::string & urdf,
+    const std::string & component_name,
+    const std::string & component_type);
 
   std::vector<std::shared_ptr<ethercat_interface::EcSlave>> ec_modules_;
   std::vector<std::unordered_map<std::string, std::string>> ec_module_parameters_;
@@ -82,7 +84,7 @@ protected:
   pluginlib::ClassLoader<ethercat_interface::EcSlave> ec_loader_{
     "ethercat_interface", "ethercat_interface::EcSlave"};
 
-  int control_frequency_;
+  double control_frequency_;
 
   std::shared_ptr<ethercat_interface::EcMaster> master_;
   std::mutex ec_mutex_;

@@ -11,6 +11,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+//
+// Author: Manuel YGUEL (yguel.robotics@gmail.com)
 
 #ifndef ETHERCAT_INTERFACE__EC_SAFETY_HPP_
 #define ETHERCAT_INTERFACE__EC_SAFETY_HPP_
@@ -50,9 +52,20 @@ public:
 class EcSafetyNet
 {
 public:
+  std::string name;  //< safety net name
   EcSafetyModule master;  //< safety master
   std::vector<EcSafetyModule> slaves;  //< safety slaves
   std::vector<EcSafetyTransfer> transfers;  //< safety data transfers
+
+public:
+  void reset(const std::string & new_name)
+  {
+    name = new_name;
+    master.name = "";
+    master.module_info = nullptr;
+    slaves.clear();
+    transfers.clear();
+  }
 };
 
 class EcSafetyTransferInfo
@@ -74,7 +87,7 @@ public:
 class EcSafety : public EcMaster
 {
 public:
-  explicitly EcSafety(const unsigned int master = 0);
+  explicit EcSafety(const unsigned int master = 0);
   ~EcSafety();
 
   void addSafetyModule(const std::string & name);

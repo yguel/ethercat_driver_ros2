@@ -272,30 +272,31 @@ CallbackReturn EthercatDriver::on_activate(
   unsigned int master_id = 666;
   // Get master id
   if (info_.hardware_parameters.find("master_id") == info_.hardware_parameters.end()) {
+    // Master id was not provided, default to 0
     master_id = 0;
   } else {
-    int int_master_id = std::stoi(info_.hardware_parameters["master_id"]);
-    if (int_master_id < 0) {
+    try {
+      master_id = std::stoul(info_.hardware_parameters["master_id"]);
+    } catch (std::exception & e) {
       RCLCPP_FATAL(
-        rclcpp::get_logger("EthercatDriver"), "Invalid master id (%d), must be >= 0!",
-        int_master_id);
+        rclcpp::get_logger("EthercatDriver"), "Invalid master id (%s)!", e.what());
       return CallbackReturn::ERROR;
     }
-    master_id = (unsigned int)int_master_id;
   }
   master_ = std::make_shared<ethercat_interface::EcMaster>(master_id);
 
   // Get control frequency
   if (info_.hardware_parameters.find("control_frequency") == info_.hardware_parameters.end()) {
-    control_frequency_ = 100;
+    // Control frequency was not provided, default to 100 Hz
+    control_frequency_ = 100.0;
   } else {
-    control_frequency_ = std::stod(info_.hardware_parameters["control_frequency"]);
-  }
-
-  if (control_frequency_ < 0) {
-    RCLCPP_FATAL(
-      rclcpp::get_logger("EthercatDriver"), "Invalid control frequency!");
-    return CallbackReturn::ERROR;
+    try {
+      control_frequency_ = std::stod(info_.hardware_parameters["control_frequency"]);
+    } catch (std::exception & e) {
+      RCLCPP_FATAL(
+        rclcpp::get_logger("EthercatDriver"), "Invalid control frequency (%s)!", e.what());
+      return CallbackReturn::ERROR;
+    }
   }
 
   // start EC and wait until state operative
@@ -415,9 +416,9 @@ hardware_interface::return_type EthercatDriver::write(
 }
 
 std::vector<std::unordered_map<std::string, std::string>> EthercatDriver::getEcModuleParam(
-  std::string & urdf,
-  std::string component_name,
-  std::string component_type)
+  const std::string & urdf,
+  const std::string & component_name,
+  const std::string & component_type)
 {
   // Check if everything OK with URDF string
   if (urdf.empty()) {
