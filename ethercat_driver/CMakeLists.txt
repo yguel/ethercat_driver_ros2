@@ -63,24 +63,45 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 
   # Ensure test data is copied to the build directory
-  set(CFG_SRC ${CMAKE_CURRENT_SOURCE_DIR}/examples/configurations/safety.ros2_control.xacro)
-  set(CFG_DST ${CMAKE_CURRENT_BINARY_DIR}/safety.ros2_control.xacro)
-
-  # Add a custom command to copy the file
-  add_custom_command(
-    OUTPUT ${CFG_DST}
-    COMMAND ${CMAKE_COMMAND} -E copy ${CFG_SRC} ${CFG_DST}
-    DEPENDS ${CFG_SRC}
-    COMMENT "Copying ${CFG_SRC} to ${CFG_DST}"
+  set(CFG_FILES
+    safety.ros2_control.xacro
+    safety_estop.ros2_control.xacro
+    beckhoff_ek1914.yaml
+    beckhoff_el1918.yaml
   )
 
-  # Create a custom target that depends on the custom command
-  add_custom_target(copy_safety_config ALL DEPENDS ${CFG_DST})
+  set(CFG_IN ${CMAKE_CURRENT_SOURCE_DIR}/examples/configurations)
+  set(CFG_DST ${CMAKE_CURRENT_BINARY_DIR}/test_configurations)
+  list(TRANSFORM CFG_FILES PREPEND "${CFG_IN}" OUTPUT_VARIABLE CFG_SRC)
+
+  # Ensure the destination directory exists
+  file(MAKE_DIRECTORY ${CFG_DST})
+
+  # List to keep track of the output files
+  set(CFG_OUT)
+
+  foreach(file ${CFG_FILES})
+    set(src_file "${CMAKE_CURRENT_SOURCE_DIR}/examples/configurations/${file}")
+    set(dst_file "${CFG_DST}/${file}")
+
+    add_custom_command(
+        OUTPUT ${dst_file}
+        COMMAND ${CMAKE_COMMAND} -E copy ${src_file} ${dst_file}
+        DEPENDS ${src_file}
+        COMMENT "Copying ${src_file} to ${dst_file}"
+    )
+
+    list(APPEND CFG_OUT ${dst_file})
+  endforeach()
+  #message(WARNING "Copying ${CFG_SRC} to ${CFG_DST}")
+
+  # Create a custom target to group the copy commands
+  add_custom_target(copy_safety_config ALL DEPENDS ${CFG_OUT})
 
   ament_add_gmock(test_ethercat_safety_driver test/test_ethercat_safety_driver.cpp)
   target_include_directories(test_ethercat_safety_driver PRIVATE include)
 
-  target_compile_definitions(test_ethercat_safety_driver PRIVATE "TEST_RESOURCES_DIRECTORY=\"${CMAKE_CURRENT_BINARY_DIR}\"")
+  target_compile_definitions(test_ethercat_safety_driver PRIVATE "TEST_RESOURCES_DIRECTORY=\"${CFG_DST}\"")
 
   target_link_libraries(test_ethercat_safety_driver
     ${PROJECT_NAME}

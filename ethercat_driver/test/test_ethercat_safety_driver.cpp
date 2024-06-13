@@ -158,3 +158,68 @@ TEST(TestEthercatSafetyDriver, getEcSafetyNet)
       18) << "Size is not as expected for 1st transfer of net n2" << std::endl;
   }
 }
+
+TEST(TestEthercatSafetyDriver, estopParseConfigFile)
+{
+  ethercat_driver::TestHelperEthercatSafetyDriver driver;
+  std::string urdf;
+  const std::string component_type = "safety";
+  {
+    std::filesystem::path dir = TEST_RESOURCES_DIRECTORY;
+    const std::string test_config_path = dir / "safety_estop.ros2_control.xacro";
+    std::ifstream file(test_config_path);
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+    urdf = buffer.str();
+  }
+
+  auto nets = driver.getEcSafetyNets(urdf, component_type);
+  EXPECT_EQ(1, nets.size()) << "Number of safety nets is not as expected" << std::endl;
+
+  auto & net = nets[0];
+  EXPECT_EQ(net.master.name, "el1918") << "Master name is not as expected" << std::endl;
+
+  EXPECT_EQ(
+    net.transfers.size(),
+    2) << "Number of transfers is not as expected for net n1" << std::endl;
+  {
+    auto & tr = net.transfers[0];
+    EXPECT_EQ(
+      tr.input.module_name,
+      "ek1914") << "Input module name is not as expected for 1st transfer of net n1" << std::endl;
+    EXPECT_EQ(
+      tr.input.index,
+      0x6000) << "Input index is not as expected for 1st transfer" << std::endl;
+
+    EXPECT_EQ(
+      tr.output.module_name,
+      "el1918") << "Output module name is not as expected for 1st transfer" << std::endl;
+    EXPECT_EQ(
+      tr.output.index,
+      0x7080) << "Output index is not as expected for 1st transfer" << std::endl;
+
+    EXPECT_EQ(
+      tr.size,
+      6) << "Size is not as expected for 1st transfer" << std::endl;
+  }
+  {
+    auto & tr = net.transfers[1];
+    EXPECT_EQ(
+      tr.input.module_name,
+      "el1918") << "Input module name is not as expected for 2nd transfer" << std::endl;
+    EXPECT_EQ(
+      tr.input.index,
+      0x6080) << "Input index is not as expected for 2nd transfer" << std::endl;
+
+    EXPECT_EQ(
+      tr.output.module_name,
+      "ek1914") << "Output module name is not as expected for 2nd transfer" << std::endl;
+    EXPECT_EQ(
+      tr.output.index,
+      0x7000) << "Output index is not as expected for 2nd transfer" << std::endl;
+
+    EXPECT_EQ(
+      tr.size,
+      6) << "Size is not as expected for 2nd transfer" << std::endl;
+  }
+}

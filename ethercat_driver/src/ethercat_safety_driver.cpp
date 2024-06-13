@@ -184,7 +184,6 @@ CallbackReturn CLASSM::on_init(
 
   // Parse safety modules from the safety tag in the URDF
   auto safety_module_params = getEcSafetyModuleParam(info_.original_xml, "safety");
-  ec_module_parameters
 
   return CallbackReturn::SUCCESS;
 }
