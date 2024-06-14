@@ -24,10 +24,10 @@
 #include "rclcpp/rclcpp.hpp"
 
 #ifndef CLASSM
-#define CLASSM  EthercatSafetyDriver
+#define CLASSM EthercatSafetyDriver
 #else
 #error alias CLASSM already defined!
-#endif  //< CLASSM
+#endif //< CLASSM
 
 namespace ethercat_driver
 {
@@ -196,14 +196,22 @@ CallbackReturn CLASSM::on_init(
   // Parse safety nets from the safety tag in the URDF
   ec_safety_nets_ = getEcSafetyNets(info_.original_xml, "safety");
 
-  // Append the safety modules to the list of modules
+  // Append the safety modules to the list of modules and load them
   for (const auto & safety_module_param : safety_module_params) {
     try {
       auto ec_module = ec_loader_.createSharedInstance(safety_module_param.at("plugin"));
-      // TODO(yguel) CHECK THAT setupSlave ????
-      // ec_module->configure(safety_module_param);
-      // HERE HERE TOP
-      ec_modules_.push_back(std::move(ec_module));
+      if (!module->setupSlave(
+          module_params[i], &empty_interface_, &empty_interface_))
+      {
+        RCLCPP_FATAL(
+          rclcpp::get_logger("EthercatDriver"),
+          "Setup of Joint module %li FAILED.", i + 1);
+        return CallbackReturn::ERROR;
+      }
+
+      auto idx = ec_modules_.size();
+      ec_modules_.push_back(ec_module);
+      ec_safety_slaves_.push_back(idx);
     } catch (const pluginlib::PluginlibException & ex) {
       const std::string & module_name = safety_module_param.at("name");
       RCLCPP_ERROR(
@@ -215,23 +223,122 @@ CallbackReturn CLASSM::on_init(
   }
 
   // Find all masters from the nets
-
-  // Record all the transfers in the safety nets
-
-  // Fill in the ec_structures within the safety modules
-
+  {
+    std::vector<std::string> master_names;
+    for (const auto & net : ec_safety_nets_) {
+      master_names.push_back(net.master.name);
+    }
+    for (size_t i = 0; i < ec_module_parameters_.size(); i++) {
+      if (std::find(
+          master_names.begin(), master_names.end(),
+          ec_module_parameters_[i].at("name")) !=
+        master_names.end())
+      {
+        ec_safety_masters_.push_back(i);
+      }
+    }
+  }
 
   return CallbackReturn::SUCCESS;
 }
 
+void CLASSM::configSafetyNetwork()
+{
+  // Record all the transfers in the safety nets
+  for (auto & net : ec_safety_nets_) {
+    for (auto & transfer : net.transfers) {
+      auto it_in = std::find_if(
+        ec_module_parameters_.begin(), ec_module_parameters_.end(),
+        [&transfer](const std::unordered_map<std::string, std::string> & module_param)
+        {
+          return module_param.at("name") == transfer.input.module_name;
+        });
+      auto it_out = std::find_if(
+        ec_module_parameters_.begin(), ec_module_parameters_.end(),
+        [&transfer](const std::unordered_map<std::string, std::string> & module_param)
+        {
+          return module_param.at("name") == transfer.output.module_name;
+        });
+      if (it_in == ec_module_parameters_.end() || it_out == ec_module_parameters_.end()) {
+        RCLCPP_ERROR(
+          rclcpp::get_logger(
+            "EthercatSafetyDriver"),
+          "Transfer %s -> %s not found in safety modules",
+          transfer.input.module_name.c_str(), transfer.output.module_name.c_str());
+        continue;
+      }
+
+      auto in_idx = std::distance(ec_module_parameters_.begin(), it_in);
+      auto out_idx = std::distance(ec_module_parameters_.begin(), it_out);
+      auto input_module = ec_modules_[in_idx]->getSlave();
+      auto output_module = ec_modules_[out_idx]->getSlave();
+    }
+  }
+
+  // Fill in the ec_structures within the safety modules
+}
 
 CallbackReturn CLASSM::on_activate(
   const rclcpp_lifecycle::State & previous_state)
 {
-  return this->EthercatDriver::on_activate(previous_state);
+  const std::lock_guard<std::mutex> lock(ec_mutex_);
+  if (activated_) {
+    RCLCPP_FATAL(rclcpp::get_logger("EthercatDriver"), "Double on_activate()");
+    return CallbackReturn::ERROR;
+  }
+  RCLCPP_INFO(rclcpp::get_logger("EthercatDriver"), "Starting ...please wait...");
+
+  // Standard Network configuration
+  configNetwork();
+
+  // Safety Network configuration
+  configSafetyNetwork();
+
+  if (!master_->activate()) {
+    RCLCPP_ERROR(rclcpp::get_logger("EthercatDriver"), "Activate EcMaster failed");
+    return CallbackReturn::ERROR;
+  }
+  RCLCPP_INFO(rclcpp::get_logger("EthercatDriver"), "Activated EcMaster!");
+
+  // start after one second
+  struct timespec t;
+  clock_gettime(CLOCK_MONOTONIC, &t);
+  t.tv_sec++;
+
+  bool running = true;
+  while (running) {
+    // wait until next shot
+    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
+    // update EtherCAT bus
+
+    master_->update();
+    RCLCPP_INFO(rclcpp::get_logger("EthercatDriver"), "updated!");
+
+    // check if operational
+    bool isAllInit = true;
+    for (auto & module : ec_modules_) {
+      isAllInit = isAllInit && module->initialized();
+    }
+    if (isAllInit) {
+      running = false;
+    }
+    // calculate next shot. carry over nanoseconds into microseconds.
+    t.tv_nsec += master_->getInterval();
+    while (t.tv_nsec >= 1000000000) {
+      t.tv_nsec -= 1000000000;
+      t.tv_sec++;
+    }
+  }
+
+  RCLCPP_INFO(
+    rclcpp::get_logger("EthercatDriver"), "System Successfully started!");
+
+  activated_ = true;
+
+  return CallbackReturn::SUCCESS;
 }
 
-}  // namespace ethercat_driver
+} // namespace ethercat_driver
 
 #undef CLASSM
 

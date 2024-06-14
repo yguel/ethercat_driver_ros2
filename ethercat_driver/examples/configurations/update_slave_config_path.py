@@ -44,12 +44,18 @@ def prepend_slave_config_xml_tag(xml_file, prepend_path, output_file=None):
 
 @click.command()
 @click.argument('xml_file', type=click.Path(exists=True))
-@click.option('--prepend_path', '-p', type=click.Path(exists=True), help='Prepend path', required=True)
-@click.option('--output_file', '-o', type=click.Path(exists=False), help='Output file', default=None)
+@click.option('--prepend_path', '-p', type=click.Path(exists=True),
+              help='Prepend path', required=True)
+@click.option('--output_file', '-o', type=click.Path(exists=False),
+              help='Output file', default=None)
 def main(xml_file, prepend_path, output_file):
     prepend_slave_config_xml_tag(xml_file, prepend_path, output_file)
-    print(
-        f"Updated the slave config path in {xml_file} with {prepend_path} and saved to {output_file}  ")
+    msg = f"Updated the slave config path in {xml_file} with {prepend_path}"
+    if output_file:
+        msg += f" and saved to {output_file}"
+    else:
+        msg += f" and saved to {xml_file}"
+    print(msg)
     return 0
 
 

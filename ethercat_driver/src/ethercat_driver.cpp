@@ -259,16 +259,8 @@ EthercatDriver::export_command_interfaces()
   return command_interfaces;
 }
 
-CallbackReturn EthercatDriver::on_activate(
-  const rclcpp_lifecycle::State & /*previous_state*/)
+void EthercatDriver::configNetwork()
 {
-  const std::lock_guard<std::mutex> lock(ec_mutex_);
-  if (activated_) {
-    RCLCPP_FATAL(rclcpp::get_logger("EthercatDriver"), "Double on_activate()");
-    return CallbackReturn::ERROR;
-  }
-  RCLCPP_INFO(rclcpp::get_logger("EthercatDriver"), "Starting ...please wait...");
-
   unsigned int master_id = 666;
   // Get master id
   if (info_.hardware_parameters.find("master_id") == info_.hardware_parameters.end()) {
@@ -317,18 +309,29 @@ CallbackReturn EthercatDriver::on_activate(
       int ret = master_->configSlaveSdo(
         std::stod(ec_module_parameters_[i]["position"]),
         sdo,
-        &abort_code
-      );
+        &abort_code);
       if (ret) {
         RCLCPP_INFO(
           rclcpp::get_logger("EthercatDriver"),
           "Failed to download config SDO for module at position %s with Error: %d",
           ec_module_parameters_[i]["position"].c_str(),
-          abort_code
-        );
+          abort_code);
       }
     }
   }
+}
+
+CallbackReturn EthercatDriver::on_activate(
+  const rclcpp_lifecycle::State & /*previous_state*/)
+{
+  const std::lock_guard<std::mutex> lock(ec_mutex_);
+  if (activated_) {
+    RCLCPP_FATAL(rclcpp::get_logger("EthercatDriver"), "Double on_activate()");
+    return CallbackReturn::ERROR;
+  }
+  RCLCPP_INFO(rclcpp::get_logger("EthercatDriver"), "Starting ...please wait...");
+
+  configNetwork();
 
   if (!master_->activate()) {
     RCLCPP_ERROR(rclcpp::get_logger("EthercatDriver"), "Activate EcMaster failed");
@@ -474,7 +477,7 @@ std::vector<std::unordered_map<std::string, std::string>> EthercatDriver::getEcM
   return module_params;
 }
 
-}  // namespace ethercat_driver
+} // namespace ethercat_driver
 
 #include "pluginlib/class_list_macros.hpp"
 

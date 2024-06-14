@@ -71,6 +71,8 @@ protected:
     const std::string & component_name,
     const std::string & component_type);
 
+  void configNetwork();
+
   std::vector<std::shared_ptr<ethercat_interface::EcSlave>> ec_modules_;
   std::vector<std::unordered_map<std::string, std::string>> ec_module_parameters_;
 

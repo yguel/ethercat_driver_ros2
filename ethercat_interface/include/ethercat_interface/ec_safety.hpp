@@ -27,18 +27,11 @@
 namespace ethercat_interface
 {
 
-class EcSafetyModule
-{
-public:
-  std::string name;  //< Module name (ec_module tag)
-  ec_slave_info_t * module_info;  //< Module info
-};
-
 class EcSafetyEntry
 {
 public:
-  std::string module_name;
-  uint16_t index;  //< PDO entry index.
+  std::string module_name;   //< Module.
+  uint16_t index;            //< PDO entry index.
 };
 
 class EcSafetyTransfer
@@ -46,16 +39,15 @@ class EcSafetyTransfer
 public:
   EcSafetyEntry input;
   EcSafetyEntry output;
-  size_t size;  //< Size of the exchange data.
+  size_t size;   //< Size of the exchange data.
 };
 
 class EcSafetyNet
 {
 public:
-  std::string name;  //< safety net name
-  EcSafetyModule master;  //< safety master
-  std::vector<EcSafetyModule> slaves;  //< safety slaves
-  std::vector<EcSafetyTransfer> transfers;  //< safety data transfers
+  std::string name;                          //< safety net name
+  EcSafetyModule master;                     //< safety master
+  std::vector<EcSafetyTransfer> transfers;   //< safety data transfers
 
 public:
   void reset(const std::string & new_name)
@@ -63,7 +55,6 @@ public:
     name = new_name;
     master.name = "";
     master.module_info = nullptr;
-    slaves.clear();
     transfers.clear();
   }
 };
@@ -71,11 +62,11 @@ public:
 class EcTransferInfo
 {
 public:
+  uint32_t domain_index;
   size_t in_offset;
   size_t out_offset;
   size_t size;
 };
-
 
 class EcTransferDomainInfo
 {
@@ -87,14 +78,11 @@ public:
 class EcSafety : public EcMaster
 {
 public:
-  explicit EcSafety(const unsigned int master = 0);
-  ~EcSafety();
 
 protected:
   std::vector<EcTransferDomainInfo> transfer_domains_;
 };
 
+} // namespace ethercat_interface
 
-}  // namespace ethercat_interface
-
-#endif  // ETHERCAT_INTERFACE__EC_SAFETY_HPP_
+#endif // ETHERCAT_INTERFACE__EC_SAFETY_HPP_

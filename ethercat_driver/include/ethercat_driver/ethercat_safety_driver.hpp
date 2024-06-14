@@ -60,6 +60,11 @@ protected:
     const std::string & urdf,
     const std::string & component_type = "safety");
 
+  /**
+   * @brief Configure the safety network
+   */
+  void configSafetyNetwork();
+
   /** Safety nets */
   std::vector<ethercat_interface::EcSafetyNet> ec_safety_nets_;
 
@@ -67,7 +72,10 @@ protected:
   std::vector<size_t> ec_safety_masters_;
   /** Indexes of modules inside ec_modules_ vector that are safety slaves only */
   std::vector<size_t> ec_safety_slaves_;
-};
-}  // namespace ethercat_driver
 
-#endif  // ETHERCAT_DRIVER__ETHERCAT_SAFETY_DRIVER_HPP_
+  /** Empty interfaces */
+  std::vector<double> empty_interface_;
+};
+} // namespace ethercat_driver
+
+#endif // ETHERCAT_DRIVER__ETHERCAT_SAFETY_DRIVER_HPP_

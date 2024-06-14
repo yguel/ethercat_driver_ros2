@@ -14,6 +14,10 @@
 //
 // Author: Manuel YGUEL (yguel.robotics@gmail.com)
 
+// Executes directly the gtest, call:
+//   ./build/ethercat_driver/test_ethercat_safety_driver
+// from the root directory of the workspace
+
 #include <gtest/gtest.h>
 #include <fstream>
 #include <sstream>
