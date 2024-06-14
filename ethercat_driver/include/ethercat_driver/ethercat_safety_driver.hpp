@@ -60,6 +60,8 @@ protected:
     const std::string & urdf,
     const std::string & component_type = "safety");
 
+  /** Safety nets */
+  std::vector<ethercat_interface::EcSafetyNet> ec_safety_nets_;
 
   /** Indexes of modules inside ec_modules_ vector that are safety masters */
   std::vector<size_t> ec_safety_masters_;

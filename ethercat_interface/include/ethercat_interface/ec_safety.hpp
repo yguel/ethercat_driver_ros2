@@ -68,7 +68,7 @@ public:
   }
 };
 
-class EcSafetyTransferInfo
+class EcTransferInfo
 {
 public:
   size_t in_offset;
@@ -77,11 +77,11 @@ public:
 };
 
 
-class EcSafetyDomainInfo
+class EcTransferDomainInfo
 {
 public:
   uint8_t * domain_address;
-  std::vector<EcSafetyTransferInfo> transfers;
+  std::vector<EcTransferInfo> transfers;
 };
 
 class EcSafety : public EcMaster
@@ -90,7 +90,8 @@ public:
   explicit EcSafety(const unsigned int master = 0);
   ~EcSafety();
 
-  void addSafetyModule(const std::string & name);
+protected:
+  std::vector<EcTransferDomainInfo> transfer_domains_;
 };
 
 

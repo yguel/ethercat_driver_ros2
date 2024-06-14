@@ -65,7 +65,7 @@ if(BUILD_TESTING)
   # Ensure test data is copied to the build directory
   set(CFG_FILES
     safety.ros2_control.xacro
-    safety_estop.ros2_control.xacro
+    safety_estop.ros2_control.template.xacro
     beckhoff_ek1914.yaml
     beckhoff_el1918.yaml
   )
@@ -93,10 +93,26 @@ if(BUILD_TESTING)
 
     list(APPEND CFG_OUT ${dst_file})
   endforeach()
-  #message(WARNING "Copying ${CFG_SRC} to ${CFG_DST}")
+  # message(WARNING "Copying ${CFG_SRC} to ${CFG_DST}")
 
   # Create a custom target to group the copy commands
   add_custom_target(copy_safety_config ALL DEPENDS ${CFG_OUT})
+
+  set(UP_PY ${CMAKE_CURRENT_SOURCE_DIR}/examples/configurations/update_slave_config_path.py)
+  set(UP_IN ${CFG_DST}/safety_estop.ros2_control.template.xacro)
+  set(UP_OUT ${CFG_DST}/safety_estop.ros2_control.xacro)
+  set(UP_DEPS ${UP_PY} ${UP_IN})
+
+  # message(WARNING "Running ${UP_PY} ${UP_IN} -p ${CFG_DST} -o ${UP_OUT}")
+  add_custom_command(
+    OUTPUT ${UP_OUT}
+    COMMAND ${CMAKE_COMMAND} -E echo "Running update_slave_config_path.py"
+    COMMAND ${CMAKE_COMMAND} -E env python3 ${UP_PY} ${UP_IN} -p ${CFG_DST} -o ${UP_OUT}
+    DEPENDS ${UP_DEPS}
+    COMMENT "Running update_slave_config_path.py"
+  )
+
+  add_custom_target(update_slave_config_path ALL DEPENDS ${UP_OUT})
 
   ament_add_gmock(test_ethercat_safety_driver test/test_ethercat_safety_driver.cpp)
   target_include_directories(test_ethercat_safety_driver PRIVATE include)

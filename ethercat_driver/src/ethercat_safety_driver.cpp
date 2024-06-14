@@ -185,6 +185,42 @@ CallbackReturn CLASSM::on_init(
   // Parse safety modules from the safety tag in the URDF
   auto safety_module_params = getEcSafetyModuleParam(info_.original_xml, "safety");
 
+  // Append the safety modules parameters to the list of modules parameters
+  size_t idx_1st = ec_module_parameters_.size();
+  ec_module_parameters_.insert(
+    ec_module_parameters_.end(), safety_module_params.begin(), safety_module_params.end());
+  for (size_t i = 0; i < safety_module_params.size(); i++) {
+    ec_safety_slaves_.push_back(idx_1st + i);
+  }
+
+  // Parse safety nets from the safety tag in the URDF
+  ec_safety_nets_ = getEcSafetyNets(info_.original_xml, "safety");
+
+  // Append the safety modules to the list of modules
+  for (const auto & safety_module_param : safety_module_params) {
+    try {
+      auto ec_module = ec_loader_.createSharedInstance(safety_module_param.at("plugin"));
+      // TODO(yguel) CHECK THAT setupSlave ????
+      // ec_module->configure(safety_module_param);
+      // HERE HERE TOP
+      ec_modules_.push_back(std::move(ec_module));
+    } catch (const pluginlib::PluginlibException & ex) {
+      const std::string & module_name = safety_module_param.at("name");
+      RCLCPP_ERROR(
+        rclcpp::get_logger(
+          "EthercatSafetyDriver"),
+        "The plugin failed to load for safety module %s. Error: %s\n",
+        module_name.c_str(), ex.what());
+    }
+  }
+
+  // Find all masters from the nets
+
+  // Record all the transfers in the safety nets
+
+  // Fill in the ec_structures within the safety modules
+
+
   return CallbackReturn::SUCCESS;
 }
 
