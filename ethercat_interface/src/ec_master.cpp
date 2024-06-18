@@ -80,14 +80,25 @@ EcMaster::~EcMaster()
 
 void EcMaster::addSlave(uint16_t alias, uint16_t position, EcSlave * slave)
 {
-  // configure slave in master
+  slave->setAliasAndPosition(alias, position);
+  addSlave(slave);
+}
 
+void EcMaster::addSlave(EcSlave * slave)
+{
+  if (false == slave->isAliasAndPositionSet()) {
+    std::string error_message = "Alias and position not set for slave (vendor id=" + std::to_string(
+      slave->vendor_id_) + ",product_code=" + std::to_string(slave->product_id_) + ").";
+    throw std::runtime_error(error_message);
+  }
+
+  // configure slave in master
   SlaveInfo slave_info;
   slave_info.slave = slave;
   slave_info.config = ecrt_master_slave_config(
-    master_, alias, position,
-    slave->vendor_id_,
-    slave->product_id_);
+    master_,
+    slave->alias_, slave->position_,
+    slave->vendor_id_, slave->product_id_);
   if (slave_info.config == NULL) {
     printWarning("Add slave. Failed to get slave configuration.");
     return;
@@ -126,7 +137,7 @@ void EcMaster::addSlave(uint16_t alias, uint16_t position, EcSlave * slave)
   } else {
     printWarning(
       "Add slave. Sync size is zero for " +
-      std::to_string(alias) + ":" + std::to_string(position));
+      std::to_string(slave->alias_) + ":" + std::to_string(slave->position_));
   }
 
   // Get all domains and associated pdos that the slave registers
@@ -135,18 +146,17 @@ void EcMaster::addSlave(uint16_t alias, uint16_t position, EcSlave * slave)
   for (auto & iter : domain_map) {
     // get the domain info, create if necessary
     uint32_t domain_index = iter.first;
-    DomainInfo * domain_info = NULL;
+    DomainInfo * domain = NULL;
     if (domain_info_.count(domain_index)) {
-      domain_info = domain_info_.at(domain_index);
+      domain = domain_info_.at(domain_index);
     }
-    if (domain_info == NULL) {
-      domain_info = new DomainInfo(master_);
-      domain_info_[domain_index] = domain_info;
+    if (domain == NULL) {
+      domain = new DomainInfo(master_);
+      domain_info_[domain_index] = domain;
     }
 
     registerPDOInDomain(
-      alias, position,
-      iter.second, domain_info,
+      iter.second, domain,
       slave);
   }
 }
@@ -170,7 +180,6 @@ int EcMaster::configSlaveSdo(
 }
 
 void EcMaster::registerPDOInDomain(
-  uint16_t alias, uint16_t position,
   std::vector<uint32_t> & channel_indices,
   DomainInfo * domain_info,
   EcSlave * slave)
@@ -196,8 +205,8 @@ void EcMaster::registerPDOInDomain(
   for (size_t i = 0; i < num_pdo_regs; ++i) {
     // create pdo entry in the domain
     ec_pdo_entry_reg_t & pdo_reg = domain_info->domain_regs[start_index + i];
-    pdo_reg.alias = alias;
-    pdo_reg.position = position;
+    pdo_reg.alias = slave->alias_;
+    pdo_reg.position = slave->position_;
     pdo_reg.vendor_id = slave->vendor_id_;
     pdo_reg.product_code = slave->product_id_;
     pdo_reg.index = pdo_regs[channel_indices[i]].index;

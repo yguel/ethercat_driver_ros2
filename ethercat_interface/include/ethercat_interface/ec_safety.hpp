@@ -23,66 +23,100 @@
 #include <vector>
 
 #include "ethercat_interface/ec_master.hpp"
+#include "ethercat_interface/ec_transfer.hpp"
 
 namespace ethercat_interface
 {
 
-class EcSafetyEntry
+class EcMemoryEntry
 {
 public:
   std::string module_name;   //< Module.
-  uint16_t index;            //< PDO entry index.
+  uint16_t alias;            //< Slave alias.
+  uint16_t position;         //< Slave position.
+  uint16_t index;            //< Channel index.
+  uint16_t subindex;         //< Channel subindex.
+
+public:
+  inline
+  std::string to_simple_string() const
+  {
+    return "( name= " + module_name + ", index= " +
+           std::to_string(index) + ", subindex= " + std::to_string(subindex) + " )";
+  }
 };
 
-class EcSafetyTransfer
+class EcTransferEntry
 {
 public:
-  EcSafetyEntry input;
-  EcSafetyEntry output;
+  EcMemoryEntry input;
+  EcMemoryEntry output;
   size_t size;   //< Size of the exchange data.
+
+public:
+  inline
+  std::string to_simple_string() const
+  {
+    return input.to_simple_string() + " -> " + output.to_simple_string() + " /  ( size= " +
+           std::to_string(size) + " )";
+  }
 };
 
 class EcSafetyNet
 {
 public:
-  std::string name;                          //< safety net name
-  EcSafetyModule master;                     //< safety master
-  std::vector<EcSafetyTransfer> transfers;   //< safety data transfers
+  std::string name;                    //< safety net name
+  std::string master;                  //< safety master
+  std::vector<EcTransferEntry> transfers;   //< safety data transfers
 
 public:
   void reset(const std::string & new_name)
   {
     name = new_name;
-    master.name = "";
-    master.module_info = nullptr;
+    master = "";
     transfers.clear();
   }
-};
-
-class EcTransferInfo
-{
-public:
-  uint32_t domain_index;
-  size_t in_offset;
-  size_t out_offset;
-  size_t size;
-};
-
-class EcTransferDomainInfo
-{
-public:
-  uint8_t * domain_address;
-  std::vector<EcTransferInfo> transfers;
 };
 
 class EcSafety : public EcMaster
 {
 public:
+  EcSafety(const unsigned int master = 0);
+  virtual ~EcSafety();
+
+public:
+  /** @brief Fill in the EcTransferInfo structures
+  *
+  * @param safety_nets Safety nets
+  *
+  * \pre DomainInfo and domain_regs vectors must have be initalized and
+  * activated. A call to EcMaster::activate() is required before calling
+  * this function, to fill in the domain_regs vector offsets. Specifically
+  * with IgH EtherCAT Master, the offset must have been initialized with the
+  * ecrt_domain_reg_pdo_entry_list function.
+  *
+  * @throw std::runtime_error if some domain_info or some pdo_entry_reg are
+  *  not valid
+  */
+  void registerTransferInDomain(const std::vector<EcSafetyNet> & safety_nets);
 
 protected:
-  std::vector<EcTransferDomainInfo> transfer_domains_;
+/** @brief Check the validity of the domain info and the ec_pdo_entry_reg_t
+ * and throw an exception if not valid.
+ *
+ * @param domain_info Domain info
+ * @param pdo_entry_reg PDO entry registration
+ *
+ * @throw std::runtime_error if domain_info or pdo_entry_reg is not valid
+*/
+  void checkDomainInfoValidity(
+    const DomainInfo & domain_info,
+    const ec_pdo_entry_reg_t & pdo_entry_reg);
+
+protected:
+  std::vector<EcTransferInfo> transfers_;
 };
 
-} // namespace ethercat_interface
+}  // namespace ethercat_interface
 
-#endif // ETHERCAT_INTERFACE__EC_SAFETY_HPP_
+#endif  // ETHERCAT_INTERFACE__EC_SAFETY_HPP_

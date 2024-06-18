@@ -60,10 +60,16 @@ protected:
     const std::string & urdf,
     const std::string & component_type = "safety");
 
+  CallbackReturn setupMaster() override;
+
   /**
    * @brief Configure the safety network
    */
   void configSafetyNetwork();
+
+protected:
+  /** Master hable to manage a safety network */
+  std::shared_ptr<ethercat_interface::EcSafety> safety_;
 
   /** Safety nets */
   std::vector<ethercat_interface::EcSafetyNet> ec_safety_nets_;
@@ -76,6 +82,6 @@ protected:
   /** Empty interfaces */
   std::vector<double> empty_interface_;
 };
-} // namespace ethercat_driver
+}  // namespace ethercat_driver
 
-#endif // ETHERCAT_DRIVER__ETHERCAT_SAFETY_DRIVER_HPP_
+#endif  // ETHERCAT_DRIVER__ETHERCAT_SAFETY_DRIVER_HPP_

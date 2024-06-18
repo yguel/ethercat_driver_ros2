@@ -87,7 +87,7 @@ TEST(TestEthercatSafetyDriver, getEcSafetyNet)
   auto & net2 = nets[net_2_index];
 
   // Net 1
-  EXPECT_EQ(net1.master.name, "m1") << "Master name is not as expected" << std::endl;
+  EXPECT_EQ(net1.master, "m1") << "Master name is not as expected" << std::endl;
   EXPECT_EQ(
     net1.transfers.size(),
     2) << "Number of transfers is not as expected for net n1" << std::endl;
@@ -137,7 +137,7 @@ TEST(TestEthercatSafetyDriver, getEcSafetyNet)
   }
 
   // Net 2
-  EXPECT_EQ(net2.master.name, "m2") << "Master name is not as expected" << std::endl;
+  EXPECT_EQ(net2.master, "m2") << "Master name is not as expected" << std::endl;
   EXPECT_EQ(
     net2.transfers.size(),
     1) << "Number of transfers is not as expected for net n2" << std::endl;
@@ -181,7 +181,7 @@ TEST(TestEthercatSafetyDriver, estopParseConfigFile)
   EXPECT_EQ(1, nets.size()) << "Number of safety nets is not as expected" << std::endl;
 
   auto & net = nets[0];
-  EXPECT_EQ(net.master.name, "el1918") << "Master name is not as expected" << std::endl;
+  EXPECT_EQ(net.master, "el1918") << "Master name is not as expected" << std::endl;
 
   EXPECT_EQ(
     net.transfers.size(),

@@ -25,26 +25,21 @@
                 <param name="slave_config">$(find xy_unilivers_description)/config/safety_master.yaml</param>
             </ec_module>
 
-            <net name="n1">
-                <ec_safety_master>m1</ec_safety_master>
-                <transfer>
-                    <in ec_module="s1">0x607a</in>
-                    <out ec_module="s2">0x60ff</out>
-                    <size>18</size>
+            <net name="n1" safety_master="m1">
+                <transfer size="18">
+                    <in ec_module="s1" index="0x607a" subindex="0x02"/>
+                    <out ec_module="s2" index="0x60ff" subindex="0x04"/>
                 </transfer>
-                <transfer>
-                    <in ec_module="s1">0x707a</in>
-                    <out ec_module="s3">0x10ff</out>
-                    <size>42</size>
+                <transfer size="42">
+                    <in ec_module="s1" index="0x707a" subindex="0x01"/>
+                    <out ec_module="s3" index="0x10ff" subindex="0x01"/>
                 </transfer>
             </net>
 
-            <net name="n2">
-                <ec_safety_master>m2</ec_safety_master>
-                <transfer>
-                    <in ec_module="q1">0x607a</in>
-                    <out ec_module="q2">0x60ff</out>
-                    <size>18</size>
+            <net name="n2" safety_master="m2">
+                <transfer size="18">
+                    <in ec_module="q1" index="0x607a" subindex="0x06"/>
+                    <out ec_module="q2" index="0x60ff" subindex="0x03"/>
                 </transfer>
             </net>
 

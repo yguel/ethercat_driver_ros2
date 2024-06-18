@@ -23,6 +23,19 @@
 
 namespace ethercat_driver
 {
+
+
+uint16_t EthercatDriver::getAliasOrDefaultAlias(
+  const std::unordered_map<std::string,
+  std::string> & slave_paramters)
+{
+  if (slave_paramters.find("alias") != slave_paramters.end()) {
+    return std::stoul(slave_paramters.at("alias"));
+  } else {
+    return 0;
+  }
+}
+
 CallbackReturn EthercatDriver::on_init(
   const hardware_interface::HardwareInfo & info)
 {
@@ -95,6 +108,9 @@ CallbackReturn EthercatDriver::on_init(
             "Setup of Joint module %li FAILED.", i + 1);
           return CallbackReturn::ERROR;
         }
+        module->setAliasAndPosition(
+          getAliasOrDefaultAlias(module_params[i]),
+          std::stoul(module_params[i].at("position")));
         ec_modules_.push_back(module);
       } catch (pluginlib::PluginlibException & ex) {
         RCLCPP_FATAL(
@@ -129,6 +145,9 @@ CallbackReturn EthercatDriver::on_init(
             "Setup of GPIO module %li FAILED.", i + 1);
           return CallbackReturn::ERROR;
         }
+        module->setAliasAndPosition(
+          getAliasOrDefaultAlias(module_params[i]),
+          std::stoul(module_params[i].at("position")));
         ec_modules_.push_back(module);
       } catch (pluginlib::PluginlibException & ex) {
         RCLCPP_FATAL(
@@ -163,6 +182,9 @@ CallbackReturn EthercatDriver::on_init(
             "Setup of Sensor module %li FAILED.", i + 1);
           return CallbackReturn::ERROR;
         }
+        module->setAliasAndPosition(
+          getAliasOrDefaultAlias(module_params[i]),
+          std::stoul(module_params[i].at("position")));
         ec_modules_.push_back(module);
       } catch (pluginlib::PluginlibException & ex) {
         RCLCPP_FATAL(
@@ -259,7 +281,7 @@ EthercatDriver::export_command_interfaces()
   return command_interfaces;
 }
 
-void EthercatDriver::configNetwork()
+CallbackReturn EthercatDriver::setupMaster()
 {
   unsigned int master_id = 666;
   // Get master id
@@ -277,6 +299,11 @@ void EthercatDriver::configNetwork()
   }
   master_ = std::make_shared<ethercat_interface::EcMaster>(master_id);
 
+  return CallbackReturn::SUCCESS;
+}
+
+CallbackReturn EthercatDriver::configNetwork()
+{
   // Get control frequency
   if (info_.hardware_parameters.find("control_frequency") == info_.hardware_parameters.end()) {
     // Control frequency was not provided, default to 100 Hz
@@ -296,10 +323,7 @@ void EthercatDriver::configNetwork()
   master_->setCtrlFrequency(control_frequency_);
 
   for (auto i = 0ul; i < ec_modules_.size(); i++) {
-    master_->addSlave(
-      std::stod(ec_module_parameters_[i]["alias"]),
-      std::stod(ec_module_parameters_[i]["position"]),
-      ec_modules_[i].get());
+    master_->addSlave(ec_modules_[i].get());
   }
 
   // configure SDO
@@ -319,6 +343,8 @@ void EthercatDriver::configNetwork()
       }
     }
   }
+
+  return CallbackReturn::SUCCESS;
 }
 
 CallbackReturn EthercatDriver::on_activate(
@@ -331,6 +357,9 @@ CallbackReturn EthercatDriver::on_activate(
   }
   RCLCPP_INFO(rclcpp::get_logger("EthercatDriver"), "Starting ...please wait...");
 
+  // setup master
+  setupMaster();
+  // configure network
   configNetwork();
 
   if (!master_->activate()) {
@@ -477,7 +506,7 @@ std::vector<std::unordered_map<std::string, std::string>> EthercatDriver::getEcM
   return module_params;
 }
 
-} // namespace ethercat_driver
+}  // namespace ethercat_driver
 
 #include "pluginlib/class_list_macros.hpp"
 

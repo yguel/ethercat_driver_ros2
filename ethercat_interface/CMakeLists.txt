@@ -24,7 +24,8 @@ ament_export_include_directories(
 add_library(
   ${PROJECT_NAME}
   SHARED
-  src/ec_master.cpp)
+  src/ec_master.cpp
+  src/ec_safety.cpp)
 
 target_include_directories(
   ${PROJECT_NAME}

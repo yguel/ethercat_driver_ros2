@@ -8,17 +8,14 @@
         </hardware>
 
         <safety>
-            <net name="safety_net">
-                <ec_safety_master>el1918</ec_safety_master>
-                <transfer>
-                    <in ec_module="ek1914">0x6000</in>
-                    <out ec_module="el1918">0x7080</out>
-                    <size>6</size>
+            <net name="safety_net" safety_master="el1918">
+                <transfer size="6">
+                    <in ec_module="ek1914" index="0x6000" subindex="0x01"/>
+                    <out ec_module="el1918" index="0x7080" subindex="0x01"/>
                 </transfer>
-                <transfer>
-                    <in ec_module="el1918">0x6080</in>
-                    <out ec_module="ek1914">0x7000</out>
-                    <size>6</size>
+                <transfer size="6">
+                    <in ec_module="el1918" index="0x6080" subindex="0x01"/>
+                    <out ec_module="ek1914" index="0x7000" subindex="0x01"/>
                 </transfer>
             </net>
         </safety>

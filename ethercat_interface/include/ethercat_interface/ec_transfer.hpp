@@ -18,18 +18,23 @@
 #define ETHERCAT_INTERFACE__EC_TRANSFER_HPP_
 
 #include <cstdint>
+#include <vector>
+
+#include "ethercat_interface/ec_master.hpp"
 
 namespace ethercat_interface
 {
 
-struct EcTransfer
+struct EcTransferInfo
 {
-  uint32_t domain_index;
-  size_t in_offset;
-  size_t out_offset;
+  const EcMaster::DomainInfo * input_domain;
+  const EcMaster::DomainInfo * output_domain;
+
+  uint8_t * in_ptr;  //< Pointer into the input process domain, equal to domain process data pointer + the offset defined in the ec_pdo_entry_reg_t data structure of a domain_regs array in a DomainInfo data structure.
+  uint8_t * out_ptr; //< Pointer into the output process domain, equal to domain process data pointer + the offset defined in the ec_pdo_entry_reg_t data structure of a domain_regs array in a DomainInfo data structure.
   size_t size;
 };
 
-} // namespace ethercat_interface
+}  // namespace ethercat_interface
 
-#endif // ETHERCAT_INTERFACE__EC_TRANSFER_HPP_
+#endif  // ETHERCAT_INTERFACE__EC_TRANSFER_HPP_

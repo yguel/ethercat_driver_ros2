@@ -71,8 +71,15 @@ protected:
     const std::string & component_name,
     const std::string & component_type);
 
-  void configNetwork();
+  uint16_t getAliasOrDefaultAlias(
+    const std::unordered_map<std::string,
+    std::string> & slave_paramters);
 
+  virtual CallbackReturn setupMaster();
+
+  CallbackReturn configNetwork();
+
+protected:
   std::vector<std::shared_ptr<ethercat_interface::EcSlave>> ec_modules_;
   std::vector<std::unordered_map<std::string, std::string>> ec_module_parameters_;
 

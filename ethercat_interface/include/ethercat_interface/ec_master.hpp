@@ -41,6 +41,12 @@ public:
     */
   void addSlave(uint16_t alias, uint16_t position, EcSlave * slave);
 
+  /** \brief add a slave device to the master
+    * alias and position should have been set
+    * before calling this function.
+    */
+  void addSlave(EcSlave * slave);
+
   /** \brief configure slave using SDO
     */
   int configSlaveSdo(uint16_t slave_position, SdoConfigEntry sdo_config, uint32_t * abort_code);
@@ -102,7 +108,6 @@ protected:
   /** register a domain of the slave */
   struct DomainInfo;
   void registerPDOInDomain(
-    uint16_t alias, uint16_t position,
     std::vector<uint32_t> & channel_indices,
     DomainInfo * domain_info,
     EcSlave * slave);
@@ -131,7 +136,7 @@ protected:
 
     ec_domain_t * domain = NULL;
     ec_domain_state_t domain_state = {};
-    uint8_t * domain_pd = NULL;
+    uint8_t * domain_pd = NULL;  //< pointer to process domain data
 
     /** domain pdo registration array.
      *  do not modify after active(), or may invalidate */
@@ -170,6 +175,9 @@ protected:
   uint32_t check_state_frequency_ = 10;
 
   uint32_t interval_;
+
+protected:
+  friend struct EcTransferInfo;
 };
 
 }  // namespace ethercat_interface

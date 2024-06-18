@@ -14,12 +14,11 @@
 //
 // Author: Manuel YGUEL (yguel.robotics@gmail.com)
 
-#include "ethercat_driver/ethercat_safety_driver.hpp"
-
 #include <tinyxml2.h>
 #include <string>
 #include <regex>
 
+#include "ethercat_driver/ethercat_safety_driver.hpp"
 #include "hardware_interface/types/hardware_interface_type_values.hpp"
 #include "rclcpp/rclcpp.hpp"
 
@@ -27,7 +26,7 @@
 #define CLASSM EthercatSafetyDriver
 #else
 #error alias CLASSM already defined!
-#endif //< CLASSM
+#endif  //< CLASSM
 
 namespace ethercat_driver
 {
@@ -103,6 +102,35 @@ unsigned int uint_from_string(const std::string & str)
   return std::stoul(s);
 }
 
+void getTransferMemoryInfo(
+  const tinyxml2::XMLElement * element,
+  ethercat_interface::EcMemoryEntry & entry,
+  const std::string & safety_net_name)
+{
+  auto name = element->FindAttribute("ec_module");
+  if (!name) {
+    std::string msg = "Transfer definition without ec_module attribute in tag, net: " +
+      safety_net_name + " direction: " + std::string(element->Name());
+    throw std::runtime_error(msg);
+  }
+  auto index = element->FindAttribute("index");
+  if (!index) {
+    std::string msg = "Transfer definition without index attribute in tag, net: " +
+      safety_net_name + " direction: " + std::string(element->Name());
+    throw std::runtime_error(msg);
+  }
+  auto subindex = element->FindAttribute("subindex");
+  if (!subindex) {
+    std::string msg = "Transfer definition without subindex attribute in tag, net: " +
+      safety_net_name + " direction: " + std::string(element->Name());
+    throw std::runtime_error(msg);
+  }
+
+  entry.module_name = name->Value();
+  entry.index = uint_from_string(index->Value());
+  entry.subindex = uint_from_string(subindex->Value());
+}
+
 std::vector<ethercat_interface::EcSafetyNet> CLASSM::getEcSafetyNets(
   const std::string & urdf, const std::string & component_type)
 {
@@ -112,10 +140,10 @@ std::vector<ethercat_interface::EcSafetyNet> CLASSM::getEcSafetyNets(
   }
   tinyxml2::XMLDocument doc;
   if (!doc.Parse(urdf.c_str()) && doc.Error()) {
-    throw std::runtime_error("invalid URDF passed in to robot parser");
+    throw std::runtime_error("invalid URDF passed to robot parser");
   }
   if (doc.Error()) {
-    throw std::runtime_error("invalid URDF passed in to robot parser");
+    throw std::runtime_error("invalid URDF passed to robot parser");
   }
 
   tinyxml2::XMLElement * robot_it = doc.RootElement();
@@ -139,25 +167,45 @@ std::vector<ethercat_interface::EcSafetyNet> CLASSM::getEcSafetyNets(
         safety_net.reset(net_it->Attribute("name"));
 
         // Master name
-        const auto * master_it = net_it->FirstChildElement("ec_safety_master");
-        safety_net.master.name = master_it->GetText();
+        auto master_name = net_it->FindAttribute("safety_master");
+        if (master_name) {
+          safety_net.master = master_name->Value();
+        } else {
+          std::string msg = "Net definition without safety_master attribute, net: " +
+            safety_net.name;
+          throw std::runtime_error(msg);
+        }
 
         // Transfers
         const auto * transfer_it = net_it->FirstChildElement("transfer");
         while (transfer_it) {
-          ethercat_interface::EcSafetyTransfer transfer;
+          ethercat_interface::EcTransferEntry transfer;
+
+          // Get transfer size
+          auto transfer_size = transfer_it->FindAttribute("size");
+          if (!transfer_size) {
+            std::string msg = "Transfer definition without size attribute, net: " +
+              safety_net.name;
+            throw std::runtime_error(msg);
+          }
+          transfer.size = uint_from_string(transfer_size->Value());
+
+          // Get transfer in and out
           const auto * in = transfer_it->FirstChildElement("in");
           const auto * out = transfer_it->FirstChildElement("out");
-          const auto * size = transfer_it->FirstChildElement("size");
+          if (!in || !out) {
+            std::string msg = "Transfer definition without in or out tag, net: " +
+              safety_net.name;
+            throw std::runtime_error(msg);
+          }
 
-          transfer.input.module_name = in->Attribute("ec_module");
-          transfer.input.index = uint_from_string(in->GetText());
-          transfer.output.module_name = out->Attribute("ec_module");
-          transfer.output.index = uint_from_string(out->GetText());
-          transfer.size = uint_from_string(size->GetText());
+          getTransferMemoryInfo(in, transfer.input, safety_net.name);
+          getTransferMemoryInfo(out, transfer.output, safety_net.name);
 
+          // Record transfer
           safety_net.transfers.push_back(transfer);
 
+          // Iterate
           transfer_it = transfer_it->NextSiblingElement("transfer");
         }
         safety_nets.push_back(safety_net);
@@ -168,6 +216,21 @@ std::vector<ethercat_interface::EcSafetyNet> CLASSM::getEcSafetyNets(
     ros2_control_it = ros2_control_it->NextSiblingElement("ros2_control");
   }
   return safety_nets;
+}
+
+void throwErrorIfModuleParametersNotFound(
+  const ethercat_interface::EcTransferEntry & transfer,
+  const std::string & module_name,
+  const std::string & safety_net_name,
+  const std::string & direction)
+{
+  std::string msg = "In safety net: " + safety_net_name + ", for transfer " +
+    transfer.to_simple_string() + ", the module name of the " + direction + "( " + module_name +
+    ") among all the recorded modules.";
+  RCLCPP_ERROR(
+    rclcpp::get_logger(
+      "EthercatSafetyDriver"), msg.c_str());
+  throw std::runtime_error(msg);
 }
 
 CallbackReturn CLASSM::on_init(
@@ -200,16 +263,20 @@ CallbackReturn CLASSM::on_init(
   for (const auto & safety_module_param : safety_module_params) {
     try {
       auto ec_module = ec_loader_.createSharedInstance(safety_module_param.at("plugin"));
-      if (!module->setupSlave(
-          module_params[i], &empty_interface_, &empty_interface_))
+      if (!ec_module->setupSlave(
+          safety_module_param, &empty_interface_, &empty_interface_))
       {
+        const std::string & module_name = safety_module_param.at("name");
         RCLCPP_FATAL(
           rclcpp::get_logger("EthercatDriver"),
-          "Setup of Joint module %li FAILED.", i + 1);
+          "Setup of safety only module %s FAILED.", module_name.c_str() );
         return CallbackReturn::ERROR;
       }
 
       auto idx = ec_modules_.size();
+      ec_module->setAliasAndPosition(
+        getAliasOrDefaultAlias(safety_module_param),
+        std::stoul(safety_module_param.at("position")));
       ec_modules_.push_back(ec_module);
       ec_safety_slaves_.push_back(idx);
     } catch (const pluginlib::PluginlibException & ex) {
@@ -226,7 +293,7 @@ CallbackReturn CLASSM::on_init(
   {
     std::vector<std::string> master_names;
     for (const auto & net : ec_safety_nets_) {
-      master_names.push_back(net.master.name);
+      master_names.push_back(net.master);
     }
     for (size_t i = 0; i < ec_module_parameters_.size(); i++) {
       if (std::find(
@@ -239,14 +306,10 @@ CallbackReturn CLASSM::on_init(
     }
   }
 
-  return CallbackReturn::SUCCESS;
-}
-
-void CLASSM::configSafetyNetwork()
-{
-  // Record all the transfers in the safety nets
+  // Identify (alias,position) all the modules participating in transfers
   for (auto & net : ec_safety_nets_) {
     for (auto & transfer : net.transfers) {
+      // Update each EcMemoryEntry with the alias and position of the module
       auto it_in = std::find_if(
         ec_module_parameters_.begin(), ec_module_parameters_.end(),
         [&transfer](const std::unordered_map<std::string, std::string> & module_param)
@@ -259,27 +322,56 @@ void CLASSM::configSafetyNetwork()
         {
           return module_param.at("name") == transfer.output.module_name;
         });
-      if (it_in == ec_module_parameters_.end() || it_out == ec_module_parameters_.end()) {
-        RCLCPP_ERROR(
-          rclcpp::get_logger(
-            "EthercatSafetyDriver"),
-          "Transfer %s -> %s not found in safety modules",
-          transfer.input.module_name.c_str(), transfer.output.module_name.c_str());
-        continue;
+      if (it_in == ec_module_parameters_.end()) {
+        throwErrorIfModuleParametersNotFound(
+          transfer, transfer.input.module_name, net.name, "input");
+      }
+      if (it_out == ec_module_parameters_.end()) {
+        throwErrorIfModuleParametersNotFound(
+          transfer, transfer.output.module_name, net.name, "output");
       }
 
       auto in_idx = std::distance(ec_module_parameters_.begin(), it_in);
       auto out_idx = std::distance(ec_module_parameters_.begin(), it_out);
-      auto input_module = ec_modules_[in_idx]->getSlave();
-      auto output_module = ec_modules_[out_idx]->getSlave();
+      const auto & input_module = ec_modules_[in_idx];
+      const auto & output_module = ec_modules_[out_idx];
+
+      transfer.input.alias = input_module->alias_;
+      transfer.input.position = input_module->position_;
+      transfer.output.alias = output_module->alias_;
+      transfer.output.position = output_module->position_;
     }
   }
 
-  // Fill in the ec_structures within the safety modules
+  return CallbackReturn::SUCCESS;
+}
+
+CallbackReturn CLASSM::setupMaster()
+{
+  unsigned int master_id = 666;
+  // Get master id
+  if (info_.hardware_parameters.find("master_id") == info_.hardware_parameters.end()) {
+    // Master id was not provided, default to 0
+    master_id = 0;
+  } else {
+    try {
+      master_id = std::stoul(info_.hardware_parameters["master_id"]);
+    } catch (std::exception & e) {
+      RCLCPP_FATAL(
+        rclcpp::get_logger("EthercatDriver"), "Invalid master id (%s)!", e.what());
+      return CallbackReturn::ERROR;
+    }
+  }
+
+  // Safety master
+  safety_ = std::make_shared<ethercat_interface::EcSafety>(master_id);
+  master_ = safety_;
+
+  return CallbackReturn::SUCCESS;
 }
 
 CallbackReturn CLASSM::on_activate(
-  const rclcpp_lifecycle::State & previous_state)
+  const rclcpp_lifecycle::State & /*previous_state*/)
 {
   const std::lock_guard<std::mutex> lock(ec_mutex_);
   if (activated_) {
@@ -288,11 +380,14 @@ CallbackReturn CLASSM::on_activate(
   }
   RCLCPP_INFO(rclcpp::get_logger("EthercatDriver"), "Starting ...please wait...");
 
+  // Setup master
+  setupMaster();
+
   // Standard Network configuration
   configNetwork();
 
   // Safety Network configuration
-  configSafetyNetwork();
+  safety_->registerTransferInDomain(ec_safety_nets_);
 
   if (!master_->activate()) {
     RCLCPP_ERROR(rclcpp::get_logger("EthercatDriver"), "Activate EcMaster failed");
@@ -338,7 +433,7 @@ CallbackReturn CLASSM::on_activate(
   return CallbackReturn::SUCCESS;
 }
 
-} // namespace ethercat_driver
+}  // namespace ethercat_driver
 
 #undef CLASSM
 
