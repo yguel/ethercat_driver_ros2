@@ -233,10 +233,15 @@ bool GenericEcSlave::setup_from_config_file(std::string config_file)
   try {
     slave_config_ = YAML::LoadFile(config_file);
   } catch (const YAML::ParserException & ex) {
-    std::cerr << "GenericEcSlave: failed to load drive configuration: " << ex.what() << std::endl;
+    std::cerr <<
+      "GenericEcSlave: failed to load EtherCAT module configuration "
+      "(YAML file is incorrect): " << ex.what() << std::endl;
     return false;
   } catch (const YAML::BadFile & ex) {
-    std::cerr << "GenericEcSlave: failed to load drive configuration: " << ex.what() << std::endl;
+    std::cerr <<
+      "GenericEcSlave: failed to load EtherCAT module configuration "
+      "(file path is incorrect or file is damaged): " << ex.what()
+              << std::endl;
     return false;
   }
   if (!setup_from_config(slave_config_)) {

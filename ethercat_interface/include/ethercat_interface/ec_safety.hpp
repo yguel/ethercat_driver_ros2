@@ -81,7 +81,7 @@ public:
 class EcSafety : public EcMaster
 {
 public:
-  EcSafety(const unsigned int master = 0);
+  explicit EcSafety(const unsigned int master = 0);
   virtual ~EcSafety();
 
 public:
@@ -100,15 +100,29 @@ public:
   */
   void registerTransferInDomain(const std::vector<EcSafetyNet> & safety_nets);
 
+  /** @brief Proceed to the transfer of all the data declared in transfers_.
+   */
+  void transferAll();
+
+  /** perform one EtherCAT cycle, passing the domain to the slaves */
+  void update(uint32_t domain = 0);
+
+  void readData(uint32_t domain = 0);
+  // TODO(yguel) investigate readData and writeData specifications
+  // both functions are called but process all the data in the domain
+  //  not only the data rpdos for the write and the tpdos for the read
+  //  why ?
+  // void writeData(uint32_t domain = 0);
+
 protected:
-/** @brief Check the validity of the domain info and the ec_pdo_entry_reg_t
- * and throw an exception if not valid.
- *
- * @param domain_info Domain info
- * @param pdo_entry_reg PDO entry registration
- *
- * @throw std::runtime_error if domain_info or pdo_entry_reg is not valid
-*/
+  /** @brief Check the validity of the domain info and the ec_pdo_entry_reg_t
+   * and throw an exception if not valid.
+   *
+   * @param domain_info Domain info
+   * @param pdo_entry_reg PDO entry registration
+   *
+   * @throw std::runtime_error if domain_info or pdo_entry_reg is not valid
+  */
   void checkDomainInfoValidity(
     const DomainInfo & domain_info,
     const ec_pdo_entry_reg_t & pdo_entry_reg);

@@ -28,6 +28,11 @@
 namespace ethercat_interface
 {
 
+inline uint64_t EC_NEWTIMEVAL2NANO(struct timespec & TV)
+{
+  return (TV.tv_sec - 946684800ULL) * 1000000000ULL + TV.tv_nsec;
+}
+
 class EcMaster
 {
 public:

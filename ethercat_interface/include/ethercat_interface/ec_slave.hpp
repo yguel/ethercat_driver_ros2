@@ -34,6 +34,12 @@ public:
   EcSlave(uint32_t vendor_id, uint32_t product_id)
   : vendor_id_(vendor_id),
     product_id_(product_id) {}
+  EcSlave(uint32_t vendor_id, uint32_t product_id, uint16_t alias, uint16_t position)
+  : vendor_id_(vendor_id),
+    product_id_(product_id)
+  {
+    setAliasAndPosition(alias, position);
+  }
   virtual ~EcSlave() {}
 
 public:
@@ -80,11 +86,10 @@ public:
   }
 
 public:
-  uint16_t alias_;        /**< Slave alias. */
-  uint16_t position_;     /**< Index after alias. If alias is zero, this is the
-                         ring position. */
-  uint32_t vendor_id_;   /**< Slave vendor ID. */
-  uint32_t product_id_;  /**< Slave product code. */
+  uint16_t alias_;        //< Slave alias.
+  uint16_t position_;     //< Index after alias. If alias is zero, stores the ring position.
+  uint32_t vendor_id_;   //< Slave vendor ID.
+  uint32_t product_id_;  //< Slave product code.
 
   std::vector<SdoConfigEntry> sdo_config;
 

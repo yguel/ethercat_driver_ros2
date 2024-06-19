@@ -29,17 +29,22 @@ def prepend_slave_config_xml_tag(xml_file, prepend_path, output_file=None):
     file path by appending the prepend_path to the existing path
     """
     tree = etree.parse(xml_file)
-    find_all_ec_module = tree.findall('.//ec_module')
-    for ec_module in find_all_ec_module:
-        for param in ec_module.findall('.//param'):
-            if param.attrib.get('name') == 'slave_config':
-                print(f"Found slave_config path: {param.text}")
-                param.text = os.path.join(prepend_path, param.text)
-                print(f"Updated slave_config path: {param.text}")
+    find_all_param = tree.findall('.//param')
+    for param in find_all_param:
+        if param.attrib.get('name') == 'slave_config':
+            print(f"Found slave_config path: {param.text}")
+            param.text = os.path.join(prepend_path, param.text)
+            print(f"Updated slave_config path: {param.text}")
+        if param.attrib.get('name') == 'safety':
+            print(f"Found safety path: {param.text}")
+            param.text = os.path.join(prepend_path, param.text)
+            print(f"Updated safety path: {param.text}")
     if output_file:
-        tree.write(output_file, pretty_print=True, xml_declaration=True, encoding='UTF-8')
+        tree.write(output_file, pretty_print=True,
+                   xml_declaration=True, encoding='UTF-8')
     else:
-        tree.write(xml_file, pretty_print=True, xml_declaration=True, encoding='UTF-8')
+        tree.write(xml_file, pretty_print=True,
+                   xml_declaration=True, encoding='UTF-8')
 
 
 @click.command()

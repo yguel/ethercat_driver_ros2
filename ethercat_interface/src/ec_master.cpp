@@ -26,9 +26,6 @@
 #include <iostream>
 #include <sstream>
 
-#define EC_NEWTIMEVAL2NANO(TV) \
-  (((TV).tv_sec - 946684800ULL) * 1000000000ULL + (TV).tv_nsec)
-
 namespace ethercat_interface
 {
 

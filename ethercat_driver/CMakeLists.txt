@@ -66,6 +66,7 @@ if(BUILD_TESTING)
   set(CFG_FILES
     safety.ros2_control.xacro
     safety_estop.ros2_control.template.xacro
+    estop_ethercat_safety.yaml
     beckhoff_ek1914.yaml
     beckhoff_el1918.yaml
   )

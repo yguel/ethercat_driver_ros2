@@ -5,23 +5,11 @@
             <plugin>ethercat_driver/EthercatDriver</plugin>
             <param name="master_id">0</param>
             <param name="control_frequency">100</param>
+            <param name="fsoe_config">estop_ethercat_safety.yaml</param>
         </hardware>
 
-        <safety>
-            <net name="safety_net" safety_master="el1918">
-                <transfer size="6">
-                    <in ec_module="ek1914" index="0x6000" subindex="0x01"/>
-                    <out ec_module="el1918" index="0x7080" subindex="0x01"/>
-                </transfer>
-                <transfer size="6">
-                    <in ec_module="el1918" index="0x6080" subindex="0x01"/>
-                    <out ec_module="ek1914" index="0x7000" subindex="0x01"/>
-                </transfer>
-            </net>
-        </safety>
-
         <gpio name="el1918">
-            <ec_module name="el1918" type="safety_master">
+            <ec_module name="el1918">
                 <param name="alias">0</param>
                 <param name="position">1</param>
                 <param name="slave_config">beckhoff_el1918.yaml</param>

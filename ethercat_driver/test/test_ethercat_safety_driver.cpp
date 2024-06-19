@@ -29,7 +29,7 @@ TEST(TestEthercatSafetyDriver, getEcSafetyModuleParam)
 {
   ethercat_driver::TestHelperEthercatSafetyDriver driver;
   std::string urdf;
-  const std::string component_type = "safety";
+  const std::string component_type = "ec_safety";
   {
     std::filesystem::path dir = TEST_RESOURCES_DIRECTORY;
     const std::string test_config_path = dir / "safety.ros2_control.xacro";
@@ -58,7 +58,7 @@ TEST(TestEthercatSafetyDriver, getEcSafetyNet)
 {
   ethercat_driver::TestHelperEthercatSafetyDriver driver;
   std::string urdf;
-  const std::string component_type = "safety";
+  const std::string component_type = "ec_safety";
   {
     std::filesystem::path dir = TEST_RESOURCES_DIRECTORY;
     const std::string test_config_path = dir / "safety.ros2_control.xacro";
@@ -167,7 +167,7 @@ TEST(TestEthercatSafetyDriver, estopParseConfigFile)
 {
   ethercat_driver::TestHelperEthercatSafetyDriver driver;
   std::string urdf;
-  const std::string component_type = "safety";
+  const std::string component_type = "ec_safety";
   {
     std::filesystem::path dir = TEST_RESOURCES_DIRECTORY;
     const std::string test_config_path = dir / "safety_estop.ros2_control.xacro";

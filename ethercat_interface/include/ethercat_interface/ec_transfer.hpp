@@ -30,8 +30,21 @@ struct EcTransferInfo
   const EcMaster::DomainInfo * input_domain;
   const EcMaster::DomainInfo * output_domain;
 
-  uint8_t * in_ptr;  //< Pointer into the input process domain, equal to domain process data pointer + the offset defined in the ec_pdo_entry_reg_t data structure of a domain_regs array in a DomainInfo data structure.
-  uint8_t * out_ptr; //< Pointer into the output process domain, equal to domain process data pointer + the offset defined in the ec_pdo_entry_reg_t data structure of a domain_regs array in a DomainInfo data structure.
+  /** Pointer into the input process domain, equal to
+   * domain process data pointer + the offset
+   * defined in the ec_pdo_entry_reg_t data structure
+   * of a domain_regs array in a DomainInfo data structure.
+   */
+  uint8_t * in_ptr;
+
+  /** Pointer into the output process domain, equal to
+   * domain process data pointer + the offset
+   * defined in the ec_pdo_entry_reg_t data structure
+   * of a domain_regs array in a DomainInfo data structure.
+   */
+  uint8_t * out_ptr;
+
+  /** Number of octets of the exchange data. */
   size_t size;
 };
 

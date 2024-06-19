@@ -17,6 +17,17 @@
 #include "ethercat_interface/ec_safety.hpp"
 #include "ethercat_interface/ec_slave.hpp"
 
+#include <unistd.h>
+#include <sys/resource.h>
+#include <pthread.h>
+#include <sched.h>
+#include <signal.h>
+#include <time.h>
+#include <sys/mman.h>
+#include <string.h>
+#include <iostream>
+#include <sstream>
+
 namespace ethercat_interface
 {
 
@@ -41,10 +52,14 @@ void EcSafety::registerTransferInDomain(const std::vector<EcSafetyNet> & safety_
     for (auto & transfer : net.transfers) {
       EcTransferInfo transfer_info;
       transfer_info.size = transfer.size;
-      // For the input and the output of the transfer find
-      //  1. the process domain data pointer
-      //  2. the offset in the process domain data
-      // By iterating over the existing DomainInfo and domain_regs vector to find the ec_pdo_entry_reg_t whose alias, position, index and subindex match the transfer input and output memory entries
+      /**
+       * For the input and the output of the transfer find
+       *   1. the process domain data pointer
+       *   2. the offset in the process domain data
+       * By iterating over the existing DomainInfo and domain_regs vector
+       * to find the ec_pdo_entry_reg_t whose alias, position, index and subindex
+       * match the transfer input and output memory entries
+       */
       for (const auto & key_val : domain_info_) {
         const DomainInfo & domain = *(key_val.second);
         for (auto & domain_reg : domain.domain_regs) {
@@ -54,7 +69,6 @@ void EcSafety::registerTransferInDomain(const std::vector<EcSafetyNet> & safety_
             domain_reg.index == transfer.input.index &&
             domain_reg.subindex == transfer.input.subindex)
           {
-
             transfer_info.input_domain = &domain;
             // 3. Compute the pointer arithmetic and store the result in the EcTransferInfo object
             transfer_info.in_ptr = domain.domain_pd + *(domain_reg.offset);
@@ -76,6 +90,94 @@ void EcSafety::registerTransferInDomain(const std::vector<EcSafetyNet> & safety_
       transfers_.push_back(transfer_info);
     }
   }
+}
+
+void EcSafety::transferAll()
+{
+  // Proceed to the transfer of all the data declared in transfers_.
+  for (auto & transfer : transfers_) {
+    // Copy the data from the input to the output
+    memcpy(transfer.out_ptr, transfer.in_ptr, transfer.size);
+  }
+}
+
+void EcSafety::update(uint32_t domain)
+{
+  // receive process data
+  ecrt_master_receive(master_);
+
+  DomainInfo * domain_info = domain_info_.at(domain);
+  if (domain_info == NULL) {
+    throw std::runtime_error("Null domain info: " + std::to_string(domain));
+  }
+
+  ecrt_domain_process(domain_info->domain);
+
+  // TODO(yguel) make transfer per domain ? Quid of transfers across domains ?
+  transferAll();
+
+  // check process data state (optional)
+  checkDomainState(domain);
+
+  // check for master and slave state change
+  if (update_counter_ % check_state_frequency_ == 0) {
+    checkMasterState();
+    checkSlaveStates();
+  }
+
+  // read and write process data
+  for (DomainInfo::Entry & entry : domain_info->entries) {
+    for (int i = 0; i < entry.num_pdos; ++i) {
+      (entry.slave)->processData(i, domain_info->domain_pd + entry.offset[i]);
+    }
+  }
+
+  struct timespec t;
+
+  clock_gettime(CLOCK_REALTIME, &t);
+  ecrt_master_application_time(master_, EC_NEWTIMEVAL2NANO(t));
+  ecrt_master_sync_reference_clock(master_);
+  ecrt_master_sync_slave_clocks(master_);
+
+  // send process data
+  ecrt_domain_queue(domain_info->domain);
+  ecrt_master_send(master_);
+
+  ++update_counter_;
+}
+
+void EcSafety::readData(uint32_t domain)
+{
+  // receive process data
+  ecrt_master_receive(master_);
+
+  DomainInfo * domain_info = domain_info_.at(domain);
+  if (domain_info == NULL) {
+    throw std::runtime_error("Null domain info: " + std::to_string(domain));
+  }
+
+  ecrt_domain_process(domain_info->domain);
+
+  // TODO(yguel) make transfer per domain ? Quid of transfers across domains ?
+  transferAll();
+
+  // check process data state (optional)
+  checkDomainState(domain);
+
+  // check for master and slave state change
+  if (update_counter_ % check_state_frequency_ == 0) {
+    checkMasterState();
+    checkSlaveStates();
+  }
+
+  // read and write process data
+  for (DomainInfo::Entry & entry : domain_info->entries) {
+    for (int i = 0; i < entry.num_pdos; ++i) {
+      (entry.slave)->processData(i, domain_info->domain_pd + entry.offset[i]);
+    }
+  }
+
+  ++update_counter_;
 }
 
 EcSafety::EcSafety(const unsigned int master)

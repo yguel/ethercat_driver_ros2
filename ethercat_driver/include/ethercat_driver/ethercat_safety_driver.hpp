@@ -17,6 +17,7 @@
 
 #include <vector>
 #include <unordered_map>
+#include <memory>
 #include <string>
 
 #include "ethercat_driver/ethercat_driver.hpp"

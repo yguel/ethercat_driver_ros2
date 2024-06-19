@@ -18,6 +18,7 @@
 #include <string>
 #include <regex>
 
+#include "yaml-cpp/yaml.h"
 #include "ethercat_driver/ethercat_safety_driver.hpp"
 #include "hardware_interface/types/hardware_interface_type_values.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -31,30 +32,51 @@
 namespace ethercat_driver
 {
 
+void loadFsoeConfigYamlFile(YAML::Node & node)
+{
+  // Get the fsoe_config parameter of the ethercat_driver hardware plugin
+  if (info_.hardware_parameters.find("fsoe_config") == info_.hardware_parameters.end()) {
+    std::string msg("fsoe_config parameter is missing!");
+    // Safety fsoe config file was not provided
+    RCLCPP_FATAL(
+      rclcpp::get_logger("EthercatSafetyDriver"), msg.c_str());
+    throw std::runtime_error(msg);
+  } else {
+    try {
+      node = YAML::LoadFile(file_path);
+    } catch (const YAML::ParserException & ex) {
+      std::string msg =
+        std::string(
+        "EthercatSafetyDriver : failed to load fsoe configuration "
+        "(YAML file is incorrect): ") + std::string(ex.what());
+      RCLCPP_FATAL(
+        rclcpp::get_logger("EthercatSafetyDriver"), msg.c_str() );
+      throw std::runtime_error(msg);
+    } catch (const YAML::BadFile & ex) {
+      std::string msg =
+        std::string(
+        "EthercatSafetyDriver : failed to load fsoe configuration "
+        "(file path is incorrect or file is damaged): " + std::string(ex.what()));
+      RCLCPP_FATAL(
+        rclcpp::get_logger("EthercatSafetyDriver"), msg.c_str() );
+      throw std::runtime_error(msg);
+    } catch (std::exception & e) {
+      std::string msg =
+        std::string(
+        "EthercatSafetyDriver : error while loading fsoe configuration: ") + std::string(e.what());
+      RCLCPP_FATAL(
+        rclcpp::get_logger("EthercatSafetyDriver"), msg.c_str() );
+      throw std::runtime_error(msg);
+    }
+  }
+}
+
 std::vector<std::unordered_map<std::string, std::string>> CLASSM::getEcSafetyModuleParam(
   const std::string & urdf, const std::string & component_type)
 {
-  // Check if everything OK with URDF string
-  if (urdf.empty()) {
-    throw std::runtime_error("empty URDF passed to robot");
-  }
-  tinyxml2::XMLDocument doc;
-  if (!doc.Parse(urdf.c_str()) && doc.Error()) {
-    throw std::runtime_error("invalid URDF passed in to robot parser");
-  }
-  if (doc.Error()) {
-    throw std::runtime_error("invalid URDF passed in to robot parser");
-  }
-
-  tinyxml2::XMLElement * robot_it = doc.RootElement();
-  if (std::string("robot").compare(robot_it->Name())) {
-    throw std::runtime_error("the robot tag is not root element in URDF");
-  }
-
-  const tinyxml2::XMLElement * ros2_control_it = robot_it->FirstChildElement("ros2_control");
-  if (!ros2_control_it) {
-    throw std::runtime_error("no ros2_control tag");
-  }
+  YAML::Node config;
+  // Load the fsoe_config file
+  loadFsoeConfigYamlFile(config);
 
   std::vector<std::unordered_map<std::string, std::string>> module_params;
   std::unordered_map<std::string, std::string> module_param;
@@ -245,8 +267,9 @@ CallbackReturn CLASSM::on_init(
   const std::lock_guard<std::mutex> lock(ec_mutex_);
   activated_ = false;
 
-  // Parse safety modules from the safety tag in the URDF
-  auto safety_module_params = getEcSafetyModuleParam(info_.original_xml, "safety");
+  // Parse safety modules from the safety yaml file defined
+  // in fsoe_config attribute of a param tag of the the URDF
+  auto safety_module_params = getEcSafetyModuleParam(info_.original_xml, "fsoe_config");
 
   // Append the safety modules parameters to the list of modules parameters
   size_t idx_1st = ec_module_parameters_.size();
@@ -256,8 +279,9 @@ CallbackReturn CLASSM::on_init(
     ec_safety_slaves_.push_back(idx_1st + i);
   }
 
-  // Parse safety nets from the safety tag in the URDF
-  ec_safety_nets_ = getEcSafetyNets(info_.original_xml, "safety");
+  // Parse safety nets from the safety yaml file defined
+  // in fsoe_config attribute of a param tag of the the URDF
+  ec_safety_nets_ = getEcSafetyNets(info_.original_xml, "fsoe_config");
 
   // Append the safety modules to the list of modules and load them
   for (const auto & safety_module_param : safety_module_params) {

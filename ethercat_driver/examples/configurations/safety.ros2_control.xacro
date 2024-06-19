@@ -5,45 +5,8 @@
             <plugin>ethercat_driver/EthercatDriver</plugin>
             <param name="master_id">0</param>
             <param name="control_frequency">100</param>
+            <param name="fsoe_config">test_config_ethercat_safety.yaml</param>
         </hardware>
-
-        <safety>
-            <ec_module name="s2">
-                <plugin>ethercat_generic_plugins/GenericEcSlave</plugin>
-                <param name="alias">0</param>
-                <param name="position">1</param>
-                <param name="slave_config">$(find xy_unilivers_description)/config/safety_slave.yaml</param>
-            </ec_module>
-            <ec_module name="m1" type="safety_master">
-                <param name="alias">0</param>
-                <param name="position">0</param>
-                <param name="slave_config">$(find xy_unilivers_description)/config/safety_master.yaml</param>
-            </ec_module>
-            <ec_module name="m2" type="safety_master">
-                <param name="alias">0</param>
-                <param name="position">0</param>
-                <param name="slave_config">$(find xy_unilivers_description)/config/safety_master.yaml</param>
-            </ec_module>
-
-            <net name="n1" safety_master="m1">
-                <transfer size="18">
-                    <in ec_module="s1" index="0x607a" subindex="0x02"/>
-                    <out ec_module="s2" index="0x60ff" subindex="0x04"/>
-                </transfer>
-                <transfer size="42">
-                    <in ec_module="s1" index="0x707a" subindex="0x01"/>
-                    <out ec_module="s3" index="0x10ff" subindex="0x01"/>
-                </transfer>
-            </net>
-
-            <net name="n2" safety_master="m2">
-                <transfer size="18">
-                    <in ec_module="q1" index="0x607a" subindex="0x06"/>
-                    <out ec_module="q2" index="0x60ff" subindex="0x03"/>
-                </transfer>
-            </net>
-
-        </safety>
 
         <sensor name="limit_switches">
             <state_interface name="limit_switch_left" />
@@ -52,7 +15,7 @@
                 <plugin>ethercat_generic_plugins/GenericEcSlave</plugin>
                 <param name="alias">0</param>
                 <param name="position">6</param>
-                <param name="slave_config">$(find xy_unilivers_description)/config/beckhoff_el1018.yaml</param>
+                <param name="slave_config">beckhoff_el1018.yaml</param>
             </ec_module>
         </sensor>
 
@@ -63,7 +26,7 @@
                 <plugin>ethercat_generic_plugins/GenericEcSlave</plugin>
                 <param name="alias">0</param>
                 <param name="position">2</param>
-                <param name="slave_config">$(find xy_unilivers_description)/config/beckhoff_el5101.yaml</param>
+                <param name="slave_config">beckhoff_el5101.yaml</param>
             </ec_module>
         </sensor>
 
@@ -82,9 +45,7 @@
                 <!-- Available modes of operation = position 8, velocity 9, effort 10, homing 6 -->
                 <param name="mode_of_operation">9</param>
                 <!-- epos3  -->
-                <param name="slave_config">$(find xy_unilivers_description)/config/maxon_epos3.yaml</param>
-                <!-- epos4 -->
-                <!-- <param name="slave_config">$(find xy_unilivers_description)/config/maxon_epos4_50_5.yaml</param> -->
+                <param name="slave_config">maxon_epos3.yaml</param>
             </ec_module>
         </joint>
     </ros2_control>
