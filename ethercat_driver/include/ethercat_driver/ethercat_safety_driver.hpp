@@ -20,6 +20,8 @@
 #include <memory>
 #include <string>
 
+#include "yaml-cpp/yaml.h"
+
 #include "ethercat_driver/ethercat_driver.hpp"
 #include "ethercat_interface/ec_safety.hpp"
 
@@ -41,30 +43,28 @@ public:
   // CallbackReturn on_deactivate(const rclcpp_lifecycle::State & previous_state) override;
 
 protected:
-  /**
-   * @brief Get safety module parameters from URDF
-   * @param urdf URDF string
-   * @param component_type Tag name in xml containing safety module declaration (default: safety)
+  /** @brief Load FailSafe Over EtherCAT Safety config YAML file
+   * @param[out] node YAML node containing the safety configuration root
+   * @param[in] path Path to the YAML file, if empty, the file is loaded from the *fsoe_config* of the YAML document
+   */
+  void loadFsoeConfigYamlFile(YAML::Node & node, const std::string & path = "");
+
+  /** @brief Get safety module parameters from YAML filer
+   * @param[in] config YAML node containing the safety configuration root
    * @return Vector of maps containing safety module parameters, each map corresponds to a safety module
    */
   std::vector<std::unordered_map<std::string, std::string>> getEcSafetyModuleParam(
-    const std::string & urdf,
-    const std::string & component_type = "safety");
+    const YAML::Node & config);
 
-  /**
-   * @brief Get safety nets from URDF
-   * @param urdf URDF string
-   * @param component_type Tag name in xml containing safety module declaration (default: safety)
+  /** @brief Get safety nets from YAML file
+   * @param[in] config YAML node containing the safety configuration root
    * @return Vector of safety nets
    */
-  std::vector<ethercat_interface::EcSafetyNet> getEcSafetyNets(
-    const std::string & urdf,
-    const std::string & component_type = "safety");
+  std::vector<ethercat_interface::EcSafetyNet> getEcSafetyNets(const YAML::Node & config);
 
   CallbackReturn setupMaster() override;
 
-  /**
-   * @brief Configure the safety network
+  /** @brief Configure the safety network
    */
   void configSafetyNetwork();
 

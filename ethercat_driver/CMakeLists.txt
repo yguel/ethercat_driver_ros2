@@ -14,6 +14,7 @@ find_package(pluginlib REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(ethercat_interface REQUIRED)
+find_package(yaml_cpp_vendor REQUIRED)
 
 file(GLOB_RECURSE PLUGINS_SRC src/*.cpp)
 
@@ -33,6 +34,7 @@ ament_target_dependencies(
   rclcpp
   rclcpp_lifecycle
   ethercat_interface
+  yaml_cpp_vendor
 )
 
 # Causes the visibility macros to use dllexport rather than dllimport,
@@ -67,6 +69,7 @@ if(BUILD_TESTING)
     safety.ros2_control.xacro
     safety_estop.ros2_control.template.xacro
     estop_ethercat_safety.yaml
+    test_config_ethercat_safety.yaml
     beckhoff_ek1914.yaml
     beckhoff_el1918.yaml
   )
@@ -129,6 +132,7 @@ if(BUILD_TESTING)
     rclcpp
     rclcpp_lifecycle
     ethercat_interface
+    yaml_cpp_vendor
   )
 endif()
 
@@ -145,5 +149,6 @@ ament_export_dependencies(
   rclcpp
   rclcpp_lifecycle
   ethercat_interface
+  yaml_cpp_vendor
 )
 ament_package()

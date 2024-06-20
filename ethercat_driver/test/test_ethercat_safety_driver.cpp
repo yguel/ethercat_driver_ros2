@@ -28,18 +28,14 @@
 TEST(TestEthercatSafetyDriver, getEcSafetyModuleParam)
 {
   ethercat_driver::TestHelperEthercatSafetyDriver driver;
-  std::string urdf;
-  const std::string component_type = "ec_safety";
-  {
-    std::filesystem::path dir = TEST_RESOURCES_DIRECTORY;
-    const std::string test_config_path = dir / "safety.ros2_control.xacro";
-    std::ifstream file(test_config_path);
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    urdf = buffer.str();
-  }
+  std::filesystem::path dir = TEST_RESOURCES_DIRECTORY;
+  const std::string test_config_path = dir / "test_config_ethercat_safety.yaml";
 
-  auto modules = driver.getEcSafetyModuleParam(urdf, component_type);
+  std::cout << "Test config path: " << test_config_path << std::endl;
+
+  YAML::Node config = YAML::LoadFile(test_config_path);
+
+  auto modules = driver.getEcSafetyModuleParam(config);
   std::set<std::string> names;
   for (auto & module : modules) {
     auto it = module.find("name");
@@ -57,18 +53,19 @@ TEST(TestEthercatSafetyDriver, getEcSafetyModuleParam)
 TEST(TestEthercatSafetyDriver, getEcSafetyNet)
 {
   ethercat_driver::TestHelperEthercatSafetyDriver driver;
-  std::string urdf;
-  const std::string component_type = "ec_safety";
+  std::string yaml;
   {
     std::filesystem::path dir = TEST_RESOURCES_DIRECTORY;
-    const std::string test_config_path = dir / "safety.ros2_control.xacro";
+    const std::string test_config_path = dir / "test_config_ethercat_safety.yaml";
     std::ifstream file(test_config_path);
     std::stringstream buffer;
     buffer << file.rdbuf();
-    urdf = buffer.str();
+    yaml = buffer.str();
   }
 
-  auto nets = driver.getEcSafetyNets(urdf, component_type);
+  YAML::Node config = YAML::Load(yaml);
+
+  auto nets = driver.getEcSafetyNets(config);
   std::set<std::string> net_names;
 
   EXPECT_EQ(nets.size(), 2) << "Number of safety nets is not as expected" << std::endl;
@@ -166,18 +163,19 @@ TEST(TestEthercatSafetyDriver, getEcSafetyNet)
 TEST(TestEthercatSafetyDriver, estopParseConfigFile)
 {
   ethercat_driver::TestHelperEthercatSafetyDriver driver;
-  std::string urdf;
-  const std::string component_type = "ec_safety";
+  std::string yaml;
   {
     std::filesystem::path dir = TEST_RESOURCES_DIRECTORY;
-    const std::string test_config_path = dir / "safety_estop.ros2_control.xacro";
+    const std::string test_config_path = dir / "estop_ethercat_safety.yaml";
     std::ifstream file(test_config_path);
     std::stringstream buffer;
     buffer << file.rdbuf();
-    urdf = buffer.str();
+    yaml = buffer.str();
   }
 
-  auto nets = driver.getEcSafetyNets(urdf, component_type);
+  YAML::Node config = YAML::Load(yaml);
+
+  auto nets = driver.getEcSafetyNets(config);
   EXPECT_EQ(1, nets.size()) << "Number of safety nets is not as expected" << std::endl;
 
   auto & net = nets[0];

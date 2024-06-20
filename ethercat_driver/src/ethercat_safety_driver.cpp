@@ -14,11 +14,9 @@
 //
 // Author: Manuel YGUEL (yguel.robotics@gmail.com)
 
-#include <tinyxml2.h>
 #include <string>
 #include <regex>
 
-#include "yaml-cpp/yaml.h"
 #include "ethercat_driver/ethercat_safety_driver.hpp"
 #include "hardware_interface/types/hardware_interface_type_values.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -32,84 +30,75 @@
 namespace ethercat_driver
 {
 
-void loadFsoeConfigYamlFile(YAML::Node & node)
+void CLASSM::loadFsoeConfigYamlFile(YAML::Node & node, const std::string & path)
 {
-  // Get the fsoe_config parameter of the ethercat_driver hardware plugin
-  if (info_.hardware_parameters.find("fsoe_config") == info_.hardware_parameters.end()) {
-    std::string msg("fsoe_config parameter is missing!");
-    // Safety fsoe config file was not provided
-    RCLCPP_FATAL(
-      rclcpp::get_logger("EthercatSafetyDriver"), msg.c_str());
-    throw std::runtime_error(msg);
-  } else {
-    try {
-      node = YAML::LoadFile(file_path);
-    } catch (const YAML::ParserException & ex) {
-      std::string msg =
-        std::string(
-        "EthercatSafetyDriver : failed to load fsoe configuration "
-        "(YAML file is incorrect): ") + std::string(ex.what());
+  std::string file_path;
+  if (path.empty()) {
+    // Get the fsoe_config parameter of the ethercat_driver hardware plugin
+    if (info_.hardware_parameters.find("fsoe_config") == info_.hardware_parameters.end()) {
+      std::string msg("fsoe_config parameter is missing!");
+      // Safety fsoe config file was not provided
       RCLCPP_FATAL(
-        rclcpp::get_logger("EthercatSafetyDriver"), msg.c_str() );
-      throw std::runtime_error(msg);
-    } catch (const YAML::BadFile & ex) {
-      std::string msg =
-        std::string(
-        "EthercatSafetyDriver : failed to load fsoe configuration "
-        "(file path is incorrect or file is damaged): " + std::string(ex.what()));
-      RCLCPP_FATAL(
-        rclcpp::get_logger("EthercatSafetyDriver"), msg.c_str() );
-      throw std::runtime_error(msg);
-    } catch (std::exception & e) {
-      std::string msg =
-        std::string(
-        "EthercatSafetyDriver : error while loading fsoe configuration: ") + std::string(e.what());
-      RCLCPP_FATAL(
-        rclcpp::get_logger("EthercatSafetyDriver"), msg.c_str() );
+        rclcpp::get_logger("EthercatSafetyDriver"), msg.c_str());
       throw std::runtime_error(msg);
     }
+    file_path = info_.hardware_parameters.at("fsoe_config");
+  } else {
+    file_path = path;
+  }
+
+  try {
+    node = YAML::LoadFile(file_path);
+  } catch (const YAML::ParserException & ex) {
+    std::string msg =
+      std::string(
+      "EthercatSafetyDriver : failed to load fsoe configuration "
+      "(YAML file is incorrect): ") + std::string(ex.what());
+    RCLCPP_FATAL(
+      rclcpp::get_logger("EthercatSafetyDriver"), msg.c_str() );
+    throw std::runtime_error(msg);
+  } catch (const YAML::BadFile & ex) {
+    std::string msg =
+      std::string(
+      "EthercatSafetyDriver : failed to load fsoe configuration "
+      "(file path is incorrect or file is damaged): " + std::string(ex.what()));
+    RCLCPP_FATAL(
+      rclcpp::get_logger("EthercatSafetyDriver"), msg.c_str() );
+    throw std::runtime_error(msg);
+  } catch (std::exception & e) {
+    std::string msg =
+      std::string(
+      "EthercatSafetyDriver : error while loading fsoe configuration: ") + std::string(e.what());
+    RCLCPP_FATAL(
+      rclcpp::get_logger("EthercatSafetyDriver"), msg.c_str() );
+    throw std::runtime_error(msg);
   }
 }
 
 std::vector<std::unordered_map<std::string, std::string>> CLASSM::getEcSafetyModuleParam(
-  const std::string & urdf, const std::string & component_type)
+  const YAML::Node & config)
 {
-  YAML::Node config;
-  // Load the fsoe_config file
-  loadFsoeConfigYamlFile(config);
-
+  if (0 == config.size() ) {
+    std::string msg = "Empty fsoe_config file!";
+    RCLCPP_FATAL(
+      rclcpp::get_logger("EthercatSafetyDriver"), msg.c_str());
+    throw std::runtime_error(msg);
+  }
   std::vector<std::unordered_map<std::string, std::string>> module_params;
   std::unordered_map<std::string, std::string> module_param;
 
-  while (ros2_control_it) {
-    const auto * ros2_control_child_it = ros2_control_it->FirstChildElement(component_type.c_str());
-    while (ros2_control_child_it) {
-      const auto * ec_module_it = ros2_control_child_it->FirstChildElement("ec_module");
-      while (ec_module_it) {
-        module_param.clear();
-        module_param["name"] = ec_module_it->Attribute("name");
-        auto type = ec_module_it->FindAttribute("type");
-        if (type) {
-          module_param["type"] = type->Value();
-        } else {
-          module_param["type"] = "safety_slave";
-        }
-        const auto * plugin_it = ec_module_it->FirstChildElement("plugin");
-        if (NULL != plugin_it) {
-          module_param["plugin"] = plugin_it->GetText();
-        }
-        const auto * param_it = ec_module_it->FirstChildElement("param");
-        while (param_it) {
-          module_param[param_it->Attribute("name")] = param_it->GetText();
-          param_it = param_it->NextSiblingElement("param");
-        }
-        module_params.push_back(module_param);
-        ec_module_it = ec_module_it->NextSiblingElement("ec_module");
+  if (config["safety_modules"]) {
+    for (const auto & module : config["safety_modules"]) {
+      module_param.clear();
+      module_param["name"] = module["name"].as<std::string>();
+      module_param["plugin"] = module["plugin"].as<std::string>();
+      for (const auto & param : module["parameters"]) {
+        module_param[param.first.as<std::string>()] = param.second.as<std::string>();
       }
-      ros2_control_child_it = ros2_control_child_it->NextSiblingElement(component_type.c_str());
+      module_params.push_back(module_param);
     }
-    ros2_control_it = ros2_control_it->NextSiblingElement("ros2_control");
   }
+
   return module_params;
 }
 
@@ -125,118 +114,84 @@ unsigned int uint_from_string(const std::string & str)
 }
 
 void getTransferMemoryInfo(
-  const tinyxml2::XMLElement * element,
+  const YAML::Node & element,
   ethercat_interface::EcMemoryEntry & entry,
+  const std::string & dir,
   const std::string & safety_net_name)
 {
-  auto name = element->FindAttribute("ec_module");
-  if (!name) {
-    std::string msg = "Transfer definition without ec_module attribute in tag, net: " +
-      safety_net_name + " direction: " + std::string(element->Name());
+  if (!element["ec_module"]) {
+    std::string msg = "Transfer definition without ec_module entry, net: " +
+      safety_net_name + " direction: " + dir;
     throw std::runtime_error(msg);
   }
-  auto index = element->FindAttribute("index");
-  if (!index) {
-    std::string msg = "Transfer definition without index attribute in tag, net: " +
-      safety_net_name + " direction: " + std::string(element->Name());
+  if (!element["index"]) {
+    std::string msg = "Transfer definition without index entry, net: " +
+      safety_net_name + " direction: " + dir;
     throw std::runtime_error(msg);
   }
-  auto subindex = element->FindAttribute("subindex");
-  if (!subindex) {
-    std::string msg = "Transfer definition without subindex attribute in tag, net: " +
-      safety_net_name + " direction: " + std::string(element->Name());
+  if (!element["subindex"]) {
+    std::string msg = "Transfer definition without subindex entry, net: " +
+      safety_net_name + " direction: " + dir;
     throw std::runtime_error(msg);
   }
 
-  entry.module_name = name->Value();
-  entry.index = uint_from_string(index->Value());
-  entry.subindex = uint_from_string(subindex->Value());
+  entry.module_name = element["ec_module"].as<std::string>();
+  entry.index = uint_from_string(element["index"].as<std::string>());
+  entry.subindex = uint_from_string(element["subindex"].as<std::string>());
 }
 
-std::vector<ethercat_interface::EcSafetyNet> CLASSM::getEcSafetyNets(
-  const std::string & urdf, const std::string & component_type)
+std::vector<ethercat_interface::EcSafetyNet> CLASSM::getEcSafetyNets(const YAML::Node & config)
 {
-  // Check if everything OK with URDF string
-  if (urdf.empty()) {
-    throw std::runtime_error("empty URDF passed to robot");
-  }
-  tinyxml2::XMLDocument doc;
-  if (!doc.Parse(urdf.c_str()) && doc.Error()) {
-    throw std::runtime_error("invalid URDF passed to robot parser");
-  }
-  if (doc.Error()) {
-    throw std::runtime_error("invalid URDF passed to robot parser");
-  }
-
-  tinyxml2::XMLElement * robot_it = doc.RootElement();
-  if (std::string("robot").compare(robot_it->Name())) {
-    throw std::runtime_error("the robot tag is not root element in URDF");
-  }
-
-  const tinyxml2::XMLElement * ros2_control_it = robot_it->FirstChildElement("ros2_control");
-  if (!ros2_control_it) {
-    throw std::runtime_error("no ros2_control tag");
+  if (0 == config.size() ) {
+    std::string msg = "Empty fsoe_config file!";
+    RCLCPP_FATAL(
+      rclcpp::get_logger("EthercatSafetyDriver"), msg.c_str());
+    throw std::runtime_error(msg);
   }
 
   std::vector<ethercat_interface::EcSafetyNet> safety_nets;
   ethercat_interface::EcSafetyNet safety_net;
 
-  while (ros2_control_it) {
-    const auto * ros2_control_child_it = ros2_control_it->FirstChildElement(component_type.c_str());
-    while (ros2_control_child_it) {
-      const auto * net_it = ros2_control_child_it->FirstChildElement("net");
-      while (net_it) {
-        safety_net.reset(net_it->Attribute("name"));
-
-        // Master name
-        auto master_name = net_it->FindAttribute("safety_master");
-        if (master_name) {
-          safety_net.master = master_name->Value();
-        } else {
-          std::string msg = "Net definition without safety_master attribute, net: " +
-            safety_net.name;
+  if (config["nets"]) {
+    for (const auto & net : config["nets"]) {
+      safety_net.reset(net["name"].as<std::string>());
+      safety_net.master = net["safety_master"].as<std::string>();
+      for (const auto & transfer : net["transfers"]) {
+        ethercat_interface::EcTransferEntry transfer_entry;
+        if (!transfer["size"]) {
+          std::string msg = "ERROR: transfer n°" + std::to_string(safety_nets.size()) + " of net " +
+            safety_net.name + " : definition without «size» parameter";
+          RCLCPP_FATAL(
+            rclcpp::get_logger("EthercatSafetyDriver"), msg.c_str());
           throw std::runtime_error(msg);
         }
-
-        // Transfers
-        const auto * transfer_it = net_it->FirstChildElement("transfer");
-        while (transfer_it) {
-          ethercat_interface::EcTransferEntry transfer;
-
-          // Get transfer size
-          auto transfer_size = transfer_it->FindAttribute("size");
-          if (!transfer_size) {
-            std::string msg = "Transfer definition without size attribute, net: " +
-              safety_net.name;
-            throw std::runtime_error(msg);
-          }
-          transfer.size = uint_from_string(transfer_size->Value());
-
-          // Get transfer in and out
-          const auto * in = transfer_it->FirstChildElement("in");
-          const auto * out = transfer_it->FirstChildElement("out");
-          if (!in || !out) {
-            std::string msg = "Transfer definition without in or out tag, net: " +
-              safety_net.name;
-            throw std::runtime_error(msg);
-          }
-
-          getTransferMemoryInfo(in, transfer.input, safety_net.name);
-          getTransferMemoryInfo(out, transfer.output, safety_net.name);
-
-          // Record transfer
-          safety_net.transfers.push_back(transfer);
-
-          // Iterate
-          transfer_it = transfer_it->NextSiblingElement("transfer");
+        if (!transfer["in"]) {
+          std::string msg = "ERROR: transfer n°" + std::to_string(safety_nets.size()) + " of net " +
+            safety_net.name + " : definition without «in» parameter";
+          RCLCPP_FATAL(
+            rclcpp::get_logger("EthercatSafetyDriver"), msg.c_str());
+          throw std::runtime_error(msg);
         }
-        safety_nets.push_back(safety_net);
-        net_it = net_it->NextSiblingElement("net");
+        if (!transfer["out"]) {
+          std::string msg = "ERROR: transfer n°" + std::to_string(safety_nets.size()) + " of net " +
+            safety_net.name + " : definition without «out» parameter";
+          RCLCPP_FATAL(
+            rclcpp::get_logger("EthercatSafetyDriver"), msg.c_str());
+          throw std::runtime_error(msg);
+        }
+        transfer_entry.size = transfer["size"].as<size_t>();
+        getTransferMemoryInfo(
+          transfer["in"], transfer_entry.input,
+          "in", safety_net.name);
+        getTransferMemoryInfo(
+          transfer["out"], transfer_entry.output,
+          "out", safety_net.name);
+        safety_net.transfers.push_back(transfer_entry);
       }
-      ros2_control_child_it = ros2_control_child_it->NextSiblingElement(component_type.c_str());
+      safety_nets.push_back(safety_net);
     }
-    ros2_control_it = ros2_control_it->NextSiblingElement("ros2_control");
   }
+
   return safety_nets;
 }
 
@@ -267,9 +222,13 @@ CallbackReturn CLASSM::on_init(
   const std::lock_guard<std::mutex> lock(ec_mutex_);
   activated_ = false;
 
+  YAML::Node config;
+  // Load the fsoe_config file
+  loadFsoeConfigYamlFile(config);
+
   // Parse safety modules from the safety yaml file defined
   // in fsoe_config attribute of a param tag of the the URDF
-  auto safety_module_params = getEcSafetyModuleParam(info_.original_xml, "fsoe_config");
+  auto safety_module_params = getEcSafetyModuleParam(config);
 
   // Append the safety modules parameters to the list of modules parameters
   size_t idx_1st = ec_module_parameters_.size();
@@ -281,7 +240,7 @@ CallbackReturn CLASSM::on_init(
 
   // Parse safety nets from the safety yaml file defined
   // in fsoe_config attribute of a param tag of the the URDF
-  ec_safety_nets_ = getEcSafetyNets(info_.original_xml, "fsoe_config");
+  ec_safety_nets_ = getEcSafetyNets(config);
 
   // Append the safety modules to the list of modules and load them
   for (const auto & safety_module_param : safety_module_params) {
@@ -334,29 +293,27 @@ CallbackReturn CLASSM::on_init(
   for (auto & net : ec_safety_nets_) {
     for (auto & transfer : net.transfers) {
       // Update each EcMemoryEntry with the alias and position of the module
-      auto it_in = std::find_if(
-        ec_module_parameters_.begin(), ec_module_parameters_.end(),
-        [&transfer](const std::unordered_map<std::string, std::string> & module_param)
-        {
-          return module_param.at("name") == transfer.input.module_name;
-        });
-      auto it_out = std::find_if(
-        ec_module_parameters_.begin(), ec_module_parameters_.end(),
-        [&transfer](const std::unordered_map<std::string, std::string> & module_param)
-        {
-          return module_param.at("name") == transfer.output.module_name;
-        });
-      if (it_in == ec_module_parameters_.end()) {
+      size_t in_idx = ec_module_parameters_.size();
+      for (in_idx = 0; in_idx < ec_module_parameters_.size(); ++in_idx) {
+        if (ec_module_parameters_[in_idx].at("name") == transfer.input.module_name) {
+          break;
+        }
+      }
+      size_t out_idx = ec_module_parameters_.size();
+      for (out_idx = 0; out_idx < ec_module_parameters_.size(); ++out_idx) {
+        if (ec_module_parameters_[out_idx].at("name") == transfer.output.module_name) {
+          break;
+        }
+      }
+      if (in_idx == ec_module_parameters_.size()) {
         throwErrorIfModuleParametersNotFound(
           transfer, transfer.input.module_name, net.name, "input");
       }
-      if (it_out == ec_module_parameters_.end()) {
+      if (out_idx == ec_module_parameters_.size()) {
         throwErrorIfModuleParametersNotFound(
           transfer, transfer.output.module_name, net.name, "output");
       }
 
-      auto in_idx = std::distance(ec_module_parameters_.begin(), it_in);
-      auto out_idx = std::distance(ec_module_parameters_.begin(), it_out);
       const auto & input_module = ec_modules_[in_idx];
       const auto & output_module = ec_modules_[out_idx];
 
