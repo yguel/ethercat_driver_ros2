@@ -367,14 +367,14 @@ CallbackReturn CLASSM::on_activate(
   // Standard Network configuration
   configNetwork();
 
-  // Safety Network configuration
-  safety_->registerTransferInDomain(ec_safety_nets_);
-
   if (!master_->activate()) {
     RCLCPP_ERROR(rclcpp::get_logger("EthercatDriver"), "Activate EcMaster failed");
     return CallbackReturn::ERROR;
   }
   RCLCPP_INFO(rclcpp::get_logger("EthercatDriver"), "Activated EcMaster!");
+
+  // Safety Network configuration
+  safety_->registerTransferInDomain(ec_safety_nets_);
 
   // start after one second
   struct timespec t;
