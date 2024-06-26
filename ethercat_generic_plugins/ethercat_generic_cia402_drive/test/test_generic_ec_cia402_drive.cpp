@@ -287,8 +287,8 @@ TEST_F(EcCiA402DriveTest, EcWriteDefaultTargetPosition)
   uint8_t domain_address[4];
   uint8_t domain_address_moo[2];
 
-  plugin_->processData(5, domain_address_moo);
-  plugin_->processData(10, domain_address_moo);
+  plugin_->processData(5, domain_address_moo);  // mode_of_operation
+  plugin_->processData(10, domain_address_moo);  // mode_of_operation_display
   ASSERT_EQ(plugin_->mode_of_operation_display_, 8);
 
   EC_WRITE_S32(domain_address, 123456);

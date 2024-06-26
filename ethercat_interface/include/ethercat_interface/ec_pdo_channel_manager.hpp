@@ -45,7 +45,16 @@ public:
     state_interface_ptr_ = state_interface;
   }
 
-  ec_pdo_entry_info_t get_pdo_entry_info() {return {index, sub_index, type2bits(data_type)};}
+  ec_pdo_entry_info_t get_pdo_entry_info()
+  {
+    std::ios oldState(nullptr);
+    oldState.copyfmt(std::cout);
+    std::cout << "{0x" << std::hex << index << ", 0x" << (uint16_t)sub_index << ", ";
+    std::cout.copyfmt(oldState);
+    std::cout << (int)type2bits(data_type) << "}," << std::endl;
+
+    return {index, sub_index, type2bits(data_type)};
+  }
 
   double ec_read(uint8_t * domain_address)
   {
@@ -140,13 +149,13 @@ public:
     if (channel_config["sub_index"]) {
       sub_index = channel_config["sub_index"].as<uint8_t>();
     } else {
-      std::cerr << "channel " << index << ": missing channel info" << std::endl;
+      std::cerr << "channel " << index << " : missing channel info" << std::endl;
     }
     // data type
     if (channel_config["type"]) {
       data_type = channel_config["type"].as<std::string>();
     } else {
-      std::cerr << "channel " << index << ": missing channel data type info" << std::endl;
+      std::cerr << "channel" << index << " : missing channel data type info" << std::endl;
     }
 
     if (pdo_type == RPDO) {
@@ -186,8 +195,6 @@ public:
   {
     if (type == "bool") {
       return 1;
-    } else if (type == "int16" || type == "uint16") {
-      return 16;
     } else if (type == "int8" || type == "uint8") {
       return 8;
     } else if (type == "int16" || type == "uint16") {

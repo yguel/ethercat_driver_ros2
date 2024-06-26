@@ -115,6 +115,13 @@ public:
   // void writeData(uint32_t domain = 0);
 
 protected:
+  /** @brief Output the memory content of the all the domains
+   * (available for pedagogic and debug purposes)
+   *
+   * @param[out] os Output stream
+  */
+  void printMemoryFrames(std::ostream & os = std::cout);
+
   /** @brief Check the validity of the domain info and the ec_pdo_entry_reg_t
    * and throw an exception if not valid.
    *

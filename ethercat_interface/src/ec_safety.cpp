@@ -52,6 +52,7 @@ void EcSafety::registerTransferInDomain(const std::vector<EcSafetyNet> & safety_
     for (auto & transfer : net.transfers) {
       EcTransferInfo transfer_info;
       transfer_info.size = transfer.size;
+      std::cout << "Size: " << transfer_info.size << std::endl;
       /**
        * For the input and the output of the transfer find
        *   1. the process domain data pointer
@@ -72,6 +73,13 @@ void EcSafety::registerTransferInDomain(const std::vector<EcSafetyNet> & safety_
             transfer_info.input_domain = &domain;
             // 3. Compute the pointer arithmetic and store the result in the EcTransferInfo object
             transfer_info.in_ptr = domain.domain_pd + *(domain_reg.offset);
+            std::cout << "esclave position: " << domain_reg.position << std::endl;
+            std::ios oldState(nullptr);
+            oldState.copyfmt(std::cout);
+            std::cout << "index: 0x" << std::hex << domain_reg.index << std::endl;
+            std::cout.copyfmt(oldState);
+            std::cout << "in offset: " << *(domain_reg.offset) << std::endl;
+            std::cout << std::endl;
           }
           // Find match for output
           if (domain_reg.alias == transfer.output.alias &&
@@ -82,6 +90,13 @@ void EcSafety::registerTransferInDomain(const std::vector<EcSafetyNet> & safety_
             transfer_info.output_domain = &domain;
             // 3. Compute the pointer arithmetic and store the result in the EcTransferInfo object
             transfer_info.out_ptr = domain.domain_pd + *(domain_reg.offset);
+            std::cout << "esclave position: " << domain_reg.position << std::endl;
+            std::ios oldState(nullptr);
+            oldState.copyfmt(std::cout);
+            std::cout << "index: 0x" << std::hex << domain_reg.index << std::endl;
+            std::cout.copyfmt(oldState);
+            std::cout << "out offset: " << *(domain_reg.offset) << std::endl;
+            std::cout << std::endl;
           }
         }
       }
@@ -89,6 +104,20 @@ void EcSafety::registerTransferInDomain(const std::vector<EcSafetyNet> & safety_
       // Record the transfer
       transfers_.push_back(transfer_info);
     }
+  }
+}
+
+void EcSafety::printMemoryFrames(std::ostream & os)
+{
+  for (auto & kv : domain_info_) {
+    os << "Domain: " << kv.first << std::endl;
+    auto & d = kv.second;
+    size_t size = ecrt_domain_size(d->domain);
+    // Display the memory
+    for (size_t i = 0; i < size; i++) {
+      os << std::hex << (int)d->domain_pd[i] << " ";
+    }
+    os << std::endl;
   }
 }
 

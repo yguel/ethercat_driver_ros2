@@ -356,10 +356,10 @@ CallbackReturn CLASSM::on_activate(
 {
   const std::lock_guard<std::mutex> lock(ec_mutex_);
   if (activated_) {
-    RCLCPP_FATAL(rclcpp::get_logger("EthercatDriver"), "Double on_activate()");
+    RCLCPP_FATAL(rclcpp::get_logger("EthercatSafetyDriver"), "Double on_activate()");
     return CallbackReturn::ERROR;
   }
-  RCLCPP_INFO(rclcpp::get_logger("EthercatDriver"), "Starting ...please wait...");
+  RCLCPP_INFO(rclcpp::get_logger("EthercatSafetyDriver"), "Starting ...please wait...");
 
   // Setup master
   setupMaster();
@@ -368,10 +368,10 @@ CallbackReturn CLASSM::on_activate(
   configNetwork();
 
   if (!master_->activate()) {
-    RCLCPP_ERROR(rclcpp::get_logger("EthercatDriver"), "Activate EcMaster failed");
+    RCLCPP_ERROR(rclcpp::get_logger("EthercatSafetyDriver"), "Activate EcSafety failed");
     return CallbackReturn::ERROR;
   }
-  RCLCPP_INFO(rclcpp::get_logger("EthercatDriver"), "Activated EcMaster!");
+  RCLCPP_INFO(rclcpp::get_logger("EthercatSafetyDriver"), "Activated EcSafety!");
 
   // Safety Network configuration
   safety_->registerTransferInDomain(ec_safety_nets_);
@@ -388,7 +388,7 @@ CallbackReturn CLASSM::on_activate(
     // update EtherCAT bus
 
     master_->update();
-    RCLCPP_INFO(rclcpp::get_logger("EthercatDriver"), "updated!");
+    RCLCPP_INFO(rclcpp::get_logger("EthercatSafetyDriver"), "updated!");
 
     // check if operational
     bool isAllInit = true;
@@ -407,7 +407,7 @@ CallbackReturn CLASSM::on_activate(
   }
 
   RCLCPP_INFO(
-    rclcpp::get_logger("EthercatDriver"), "System Successfully started!");
+    rclcpp::get_logger("EthercatSafetyDriver"), "System Successfully started!");
 
   activated_ = true;
 

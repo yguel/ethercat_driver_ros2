@@ -30,7 +30,7 @@ rpdo: # RxPDO = receive PDO Mapping, MASTER OUT SLAVE IN
         }
   - index: 0x17ff
     channels:
-      - { index: 0x0000, sub_index: 0x00, type: int16 }
+      - { index: 0x0000, sub_index: 0x00, type: bit16 }
 
 sm: # Sync Manager
   - { index: 0, type: output, watchdog: disable }

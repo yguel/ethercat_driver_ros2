@@ -2,7 +2,7 @@
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
     <ros2_control name="ec_safety_estop_test_config" type="system">
         <hardware>
-            <plugin>ethercat_driver/EthercatDriver</plugin>
+            <plugin>ethercat_driver/EthercatSafetyDriver</plugin>
             <param name="master_id">0</param>
             <param name="control_frequency">100</param>
             <param name="fsoe_config">estop_ethercat_safety.yaml</param>

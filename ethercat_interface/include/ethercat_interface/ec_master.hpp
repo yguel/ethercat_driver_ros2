@@ -98,8 +98,8 @@ public:
 
   uint32_t getInterval() {return interval_;}
 
-  void readData(uint32_t domain = 0);
-  void writeData(uint32_t domain = 0);
+  virtual void readData(uint32_t domain = 0);
+  virtual void writeData(uint32_t domain = 0);
 
 protected:
   /** true if running */
