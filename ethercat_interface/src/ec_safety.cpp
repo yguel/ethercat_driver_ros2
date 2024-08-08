@@ -185,14 +185,20 @@ void EcSafety::update(uint32_t domain)
   std::cout << "Circulo slave (position 3) register 0x6640, 0x00, 1 byte: ";
   printMemoryFrame(3, 0x6640, 0x00, 1, true, std::cout);
 
-  std::cout << "Transfer all" << std::endl;
+  uint8_t * pointer_register = getMemoryStart(3, 0x6640, 0x00);
+  uint8_t value_register = *pointer_register;
+
   // TODO(yguel) make transfer per domain ? Quid of transfers across domains ?
   transferAll();
 
-  // Test: display circulo register 0x6640, 0x00, 1 byte
-  // to see if this byte is indeed used in read-write mode
-  std::cout << "Circulo slave (position 3) register 0x6640, 0x00, 1 byte: ";
-  printMemoryFrame(3, 0x6640, 0x00, 1, true, std::cout);
+  if (*pointer_register != value_register) {
+    std::cout << "Change after transfer all" << std::endl;
+    // Test: display circulo register 0x6640, 0x00, 1 byte
+    // to see if this byte is indeed used in read-write mode
+    std::cout << "Circulo slave (position 3) register 0x6640, 0x00, 1 byte: ";
+    printMemoryFrame(3, 0x6640, 0x00, 1, true, std::cout);
+    value_register = *pointer_register;
+  }
 
   // check process data state (optional)
   checkDomainState(domain);
@@ -203,7 +209,6 @@ void EcSafety::update(uint32_t domain)
     checkSlaveStates();
   }
 
-  std::cout << "Process data" << std::endl;
   // read and write process data
   for (DomainInfo::Entry & entry : domain_info->entries) {
     for (int i = 0; i < entry.num_pdos; ++i) {
@@ -211,10 +216,14 @@ void EcSafety::update(uint32_t domain)
     }
   }
 
-  // Test: display circulo register 0x6640, 0x00, 1 byte
-  // to see if this byte is indeed used in read-write mode
-  std::cout << "Circulo slave (position 3) register 0x6640, 0x00, 1 byte: ";
-  printMemoryFrame(3, 0x6640, 0x00, 1, true, std::cout);
+  if (*pointer_register != value_register) {
+    std::cout << "Change after process data" << std::endl;
+    // Test: display circulo register 0x6640, 0x00, 1 byte
+    // to see if this byte is indeed used in read-write mode
+    std::cout << "Circulo slave (position 3) register 0x6640, 0x00, 1 byte: ";
+    printMemoryFrame(3, 0x6640, 0x00, 1, true, std::cout);
+    value_register = *pointer_register;
+  }
 
 
   struct timespec t;
