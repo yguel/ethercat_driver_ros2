@@ -116,7 +116,7 @@ void EcSafety::printMemoryFrames(std::ostream & os)
     size_t size = ecrt_domain_size(d->domain);
     // Display the memory
     for (size_t i = 0; i < size; i++) {
-      os << std::hex << (int)d->domain_pd[i] << " ";
+      os << std::hex << static_cast<int>(d->domain_pd[i]) << " ";
     }
     os << std::endl;
   }
@@ -152,7 +152,7 @@ void EcSafety::printMemoryFrame(
       if (binary) {
         os << std::bitset<8>(pointer[i]) << " ";
       } else {
-        os << std::hex << (int)(pointer[i]) << " ";
+        os << std::hex << static_cast<int>(pointer[i]) << " ";
       }
     }
     os << std::endl;
@@ -180,8 +180,19 @@ void EcSafety::update(uint32_t domain)
 
   ecrt_domain_process(domain_info->domain);
 
+  // Test: display circulo register 0x6640, 0x00, 1 byte
+  // to see if this byte is indeed used in read-write mode
+  std::cout << "Circulo slave (position 3) register 0x6640, 0x00, 1 byte: ";
+  printMemoryFrame(3, 0x6640, 0x00, 1, true, std::cout);
+
+  std::cout << "Transfer all" << std::endl;
   // TODO(yguel) make transfer per domain ? Quid of transfers across domains ?
   transferAll();
+
+  // Test: display circulo register 0x6640, 0x00, 1 byte
+  // to see if this byte is indeed used in read-write mode
+  std::cout << "Circulo slave (position 3) register 0x6640, 0x00, 1 byte: ";
+  printMemoryFrame(3, 0x6640, 0x00, 1, true, std::cout);
 
   // check process data state (optional)
   checkDomainState(domain);
@@ -192,12 +203,19 @@ void EcSafety::update(uint32_t domain)
     checkSlaveStates();
   }
 
+  std::cout << "Process data" << std::endl;
   // read and write process data
   for (DomainInfo::Entry & entry : domain_info->entries) {
     for (int i = 0; i < entry.num_pdos; ++i) {
       (entry.slave)->processData(i, domain_info->domain_pd + entry.offset[i]);
     }
   }
+
+  // Test: display circulo register 0x6640, 0x00, 1 byte
+  // to see if this byte is indeed used in read-write mode
+  std::cout << "Circulo slave (position 3) register 0x6640, 0x00, 1 byte: ";
+  printMemoryFrame(3, 0x6640, 0x00, 1, true, std::cout);
+
 
   struct timespec t;
 
