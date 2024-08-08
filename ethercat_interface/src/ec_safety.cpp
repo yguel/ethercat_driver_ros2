@@ -182,11 +182,23 @@ void EcSafety::update(uint32_t domain)
 
   // Test: display circulo register 0x6640, 0x00, 1 byte
   // to see if this byte is indeed used in read-write mode
-  std::cout << "Circulo slave (position 3) register 0x6640, 0x00, 1 byte: ";
-  printMemoryFrame(3, 0x6640, 0x00, 1, true, std::cout);
-
   uint8_t * pointer_register = getMemoryStart(3, 0x6640, 0x00);
-  uint8_t value_register = *pointer_register;
+  static uint8_t value_register = *pointer_register;
+  static bool first = true;
+  if (first) {
+    std::cout << "Circulo slave (position 3) register 0x6640, 0x00, 1 byte: ";
+    printMemoryFrame(3, 0x6640, 0x00, 1, true, std::cout);
+    first = false;
+  } else {
+    if (*pointer_register != value_register) {
+      std::cout << "Change of STO register value !" << std::endl;
+      // Test: display circulo register 0x6640, 0x00, 1 byte
+      // to see if this byte is indeed used in read-write mode
+      std::cout << "Circulo slave (position 3) register 0x6640, 0x00, 1 byte: ";
+      printMemoryFrame(3, 0x6640, 0x00, 1, true, std::cout);
+      value_register = *pointer_register;
+    }
+  }
 
   // TODO(yguel) make transfer per domain ? Quid of transfers across domains ?
   transferAll();
@@ -264,11 +276,23 @@ void EcSafety::readData(uint32_t domain)
 
   // Test: display circulo register 0x6640, 0x00, 1 byte
   // to see if this byte is indeed used in read-write mode
-  std::cout << "Circulo slave (position 3) register 0x6640, 0x00, 1 byte: ";
-  printMemoryFrame(3, 0x6640, 0x00, 1, true, std::cout);
-
   uint8_t * pointer_register = getMemoryStart(3, 0x6640, 0x00);
-  uint8_t value_register = *pointer_register;
+  static uint8_t value_register = *pointer_register;
+  static bool first = true;
+  if (first) {
+    std::cout << "Circulo slave (position 3) register 0x6640, 0x00, 1 byte: ";
+    printMemoryFrame(3, 0x6640, 0x00, 1, true, std::cout);
+    first = false;
+  } else {
+    if (*pointer_register != value_register) {
+      std::cout << "Change of STO register value !" << std::endl;
+      // Test: display circulo register 0x6640, 0x00, 1 byte
+      // to see if this byte is indeed used in read-write mode
+      std::cout << "Circulo slave (position 3) register 0x6640, 0x00, 1 byte: ";
+      printMemoryFrame(3, 0x6640, 0x00, 1, true, std::cout);
+      value_register = *pointer_register;
+    }
+  }
 
   // TODO(yguel) make transfer per domain ? Quid of transfers across domains ?
   transferAll();
