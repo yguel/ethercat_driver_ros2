@@ -274,37 +274,33 @@ void EcSafety::readData(uint32_t domain)
 
   ecrt_domain_process(domain_info->domain);
 
-  // Test: display circulo register 0x6640, 0x00, 1 byte
-  // to see if this byte is indeed used in read-write mode
-  uint8_t * pointer_register = getMemoryStart(3, 0x6640, 0x00);
-  static uint8_t value_register = *pointer_register;
+  // Test: display octet that is behind 0x6770 register and octet that is behind 0x6760 register
+  uint8_t * pointer_cmd = getMemoryStart(3, 0x6770, 1);
+  static uint8_t value_cmd = *(pointer_cmd + 1);
+  uint8_t * pointer_state = getMemoryStart(3, 0x6760, 1);
+  static uint8_t value_state = *(pointer_state + 1);
+
   static bool first = true;
   if (first) {
-    std::cout << "Circulo slave (position 3) register 0x6640, 0x00, 1 byte: ";
-    printMemoryFrame(3, 0x6640, 0x00, 1, true, std::cout);
+    std::cout << "Circulo slave (position 3):" << std::endl;
+    std::cout << "\tcommand value for STO: " << std::bitset<8>(value_cmd) << std::endl;
+    std::cout << "\t  state value for STO: " << std::bitset<8>(value_state) << std::endl;
     first = false;
   } else {
-    if (*pointer_register != value_register) {
-      std::cout << "Change of STO register value !" << std::endl;
-      // Test: display circulo register 0x6640, 0x00, 1 byte
-      // to see if this byte is indeed used in read-write mode
-      std::cout << "Circulo slave (position 3) register 0x6640, 0x00, 1 byte: ";
-      printMemoryFrame(3, 0x6640, 0x00, 1, true, std::cout);
-      value_register = *pointer_register;
+    if (*pointer_cmd != value_cmd) {
+      std::cout << "Change of STO command value !" << std::endl;
+      std::cout << "\tcommand value for STO: " << std::bitset<8>(*pointer_cmd) << std::endl;
+      value_cmd = *pointer_cmd;
+    }
+    if (*pointer_state != value_state) {
+      std::cout << "Change of STO state value !" << std::endl;
+      std::cout << "\t  state value for STO: " << std::bitset<8>(*pointer_state) << std::endl;
+      value_state = *pointer_state;
     }
   }
 
   // TODO(yguel) make transfer per domain ? Quid of transfers across domains ?
   transferAll();
-
-  if (*pointer_register != value_register) {
-    std::cout << "Change after transfer all" << std::endl;
-    // Test: display circulo register 0x6640, 0x00, 1 byte
-    // to see if this byte is indeed used in read-write mode
-    std::cout << "Circulo slave (position 3) register 0x6640, 0x00, 1 byte: ";
-    printMemoryFrame(3, 0x6640, 0x00, 1, true, std::cout);
-    value_register = *pointer_register;
-  }
 
   // check process data state (optional)
   checkDomainState(domain);
@@ -320,15 +316,6 @@ void EcSafety::readData(uint32_t domain)
     for (int i = 0; i < entry.num_pdos; ++i) {
       (entry.slave)->processData(i, domain_info->domain_pd + entry.offset[i]);
     }
-  }
-
-  if (*pointer_register != value_register) {
-    std::cout << "Change after process data" << std::endl;
-    // Test: display circulo register 0x6640, 0x00, 1 byte
-    // to see if this byte is indeed used in read-write mode
-    std::cout << "Circulo slave (position 3) register 0x6640, 0x00, 1 byte: ";
-    printMemoryFrame(3, 0x6640, 0x00, 1, true, std::cout);
-    value_register = *pointer_register;
   }
 
   uint16_t control_word = *(getMemoryStart(3, 0x6040, 0x00));
