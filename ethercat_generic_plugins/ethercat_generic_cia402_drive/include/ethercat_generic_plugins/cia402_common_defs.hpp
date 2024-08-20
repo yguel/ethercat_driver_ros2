@@ -15,18 +15,22 @@
 #ifndef ETHERCAT_GENERIC_PLUGINS__CIA402_COMMON_DEFS_HPP_
 #define ETHERCAT_GENERIC_PLUGINS__CIA402_COMMON_DEFS_HPP_
 
-#define CiA402D_RPDO_CONTROLWORD  ((uint16_t) 0x6040)
-#define CiA402D_RPDO_POSITION  ((uint16_t) 0x607a)
-#define CiA402D_RPDO_VELOCITY  ((uint16_t) 0x60ff)
-#define CiA402D_RPDO_EFFORT  ((uint16_t) 0x6071)
-#define CiA402D_RPDO_MODE_OF_OPERATION  ((uint16_t) 0x6060)
-
-#define CiA402D_TPDO_POSITION ((uint16_t) 0x6064)
-#define CiA402D_TPDO_STATUSWORD  ((uint16_t) 0x6041)
-#define CiA402D_TPDO_MODE_OF_OPERATION_DISPLAY  ((uint16_t) 0x6061)
-
 #include <map>
 #include <string>
+
+namespace ethercat_generic_plugins
+{
+
+extern uint16_t CiA402D_RPDO_CONTROLWORD;
+extern uint16_t CiA402D_RPDO_POSITION;
+extern uint16_t CiA402D_RPDO_VELOCITY;
+extern uint16_t CiA402D_RPDO_EFFORT;
+extern uint16_t CiA402D_RPDO_MODE_OF_OPERATION;
+extern uint16_t CiA402D_TPDO_POSITION;
+extern uint16_t CiA402D_TPDO_STATUSWORD;
+extern uint16_t CiA402D_TPDO_MODE_OF_OPERATION_DISPLAY;
+extern uint16_t CiA402D_TPDO_ERROR_CODE;
+
 
 enum DeviceState
 {
@@ -67,5 +71,7 @@ const std::map<DeviceState, std::string> DEVICE_STATE_STR = {
   {STATE_FAULT, "Fault"},
   {STATE_UNDEFINED, "Undefined State"}
 };
+
+}  // namespace ethercat_generic_plugins
 
 #endif  // ETHERCAT_GENERIC_PLUGINS__CIA402_COMMON_DEFS_HPP_

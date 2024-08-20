@@ -13,13 +13,26 @@
 // limitations under the License.
 //
 // Author: Maciej Bednarczyk (macbednarczyk@gmail.com)
+// Author: Manuel YGUEL (yguel.robotics@gmail.com)
 
 #include <numeric>
+#include <regex>
 
 #include "ethercat_generic_plugins/generic_ec_cia402_drive.hpp"
 
 namespace ethercat_generic_plugins
 {
+
+/** Drive registers as defined in the CiA 402 specification */
+uint16_t CiA402D_RPDO_CONTROLWORD = 0x6040;
+uint16_t CiA402D_RPDO_POSITION = 0x607a;
+uint16_t CiA402D_RPDO_VELOCITY = 0x60ff;
+uint16_t CiA402D_RPDO_EFFORT = 0x6071;
+uint16_t CiA402D_RPDO_MODE_OF_OPERATION = 0x6060;
+uint16_t CiA402D_TPDO_POSITION = 0x6064;
+uint16_t CiA402D_TPDO_STATUSWORD = 0x6041;
+uint16_t CiA402D_TPDO_MODE_OF_OPERATION_DISPLAY = 0x6061;
+uint16_t CiA402D_TPDO_ERROR_CODE = 0x606c;
 
 EcCiA402Drive::EcCiA402Drive()
 : GenericEcSlave() {}
@@ -106,6 +119,17 @@ void EcCiA402Drive::processData(size_t index, uint8_t * domain_address)
   }
 }
 
+unsigned int uint_from_string(const std::string & str)
+{
+  // Strip leading and trailing whitespaces
+  std::string s = std::regex_replace(str, std::regex("^ +| +$|( ) +"), "$1");
+  // Test if the number is in hexadecimal format
+  if (s.find("0x") == 0) {
+    return std::stoul(s, nullptr, 16);
+  }
+  return std::stoul(s);
+}
+
 bool EcCiA402Drive::setupSlave(
   std::unordered_map<std::string, std::string> slave_paramters,
   std::vector<double> * state_interface,
@@ -123,6 +147,37 @@ bool EcCiA402Drive::setupSlave(
     std::cerr << "EcCiA402Drive: failed to find 'slave_config' tag in URDF." << std::endl;
     return false;
   }
+
+  // setup PDOs entries if definition is present in URDF
+  if (paramters_.find("rpdo_control_word") != paramters_.end()) {
+    CiA402D_RPDO_CONTROLWORD = uint_from_string(paramters_["rpdo_control_word"]);
+  }
+  if (paramters_.find("rpdo_target_position") != paramters_.end()) {
+    CiA402D_RPDO_POSITION = uint_from_string(paramters_["rpdo_target_position"]);
+  }
+  if (paramters_.find("rpdo_target_velocity") != paramters_.end()) {
+    CiA402D_RPDO_VELOCITY = uint_from_string(paramters_["rpdo_target_velocity"]);
+  }
+  if (paramters_.find("rpdo_target_effort") != paramters_.end()) {
+    CiA402D_RPDO_EFFORT = uint_from_string(paramters_["rpdo_target_effort"]);
+  }
+  if (paramters_.find("rpdo_mode_of_operation") != paramters_.end()) {
+    CiA402D_RPDO_MODE_OF_OPERATION = uint_from_string(paramters_["rpdo_mode_of_operation"]);
+  }
+  if (paramters_.find("tpdo_actual_position") != paramters_.end()) {
+    CiA402D_TPDO_POSITION = uint_from_string(paramters_["tpdo_actual_position"]);
+  }
+  if (paramters_.find("tpdo_status_word") != paramters_.end()) {
+    CiA402D_TPDO_STATUSWORD = uint_from_string(paramters_["tpdo_status_word"]);
+  }
+  if (paramters_.find("tpdo_mode_of_operation_display") != paramters_.end()) {
+    CiA402D_TPDO_MODE_OF_OPERATION_DISPLAY =
+      uint_from_string(paramters_["tpdo_mode_of_operation_display"]);
+  }
+  if (paramters_.find("tpdo_error_code") != paramters_.end()) {
+    CiA402D_TPDO_ERROR_CODE = uint_from_string(paramters_["tpdo_error_code"]);
+  }
+  // < End of setup PDOs entries
 
   setup_interface_mapping();
   setup_syncs();
