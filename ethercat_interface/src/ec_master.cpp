@@ -69,6 +69,17 @@ EcMaster::~EcMaster()
   }
   */
   for (auto & domain : domain_info_) {
+    for (auto & entry : domain.second->entries) {
+      if (entry.offset != NULL) {
+        delete[] entry.offset;
+      }
+      if (entry.bit_position != NULL) {
+        delete[] entry.bit_position;
+      }
+      if (entry.offset_in_memory != NULL) {
+        delete[] entry.offset_in_memory;
+      }
+    }
     if (domain.second != NULL) {
       delete domain.second;
     }
@@ -519,6 +530,23 @@ void EcMaster::checkSlaveStates()
   }
 }
 
+bool EcMaster::checkAllSlavesOperational()
+{
+  for (SlaveInfo & slave : slave_info_) {
+    ec_slave_config_state_t s;
+    ecrt_slave_config_state(slave.config, &s);
+    if (false == s.operational) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void EcMaster::stop()
+{
+  running_ = false;
+  ecrt_release_master(master_);
+}
 
 void EcMaster::printWarning(const std::string & message)
 {

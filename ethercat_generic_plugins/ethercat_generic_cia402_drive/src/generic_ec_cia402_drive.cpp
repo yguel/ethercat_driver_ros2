@@ -25,20 +25,46 @@ EcCiA402Drive::EcCiA402Drive()
 : GenericEcSlave() {}
 EcCiA402Drive::~EcCiA402Drive() {}
 
-bool EcCiA402Drive::initialized() const {return initialized_;}
+bool EcCiA402Drive::initialized() {return initialized_;}
+
+bool EcCiA402Drive::checkOperationEnabled()
+{
+  initialized_ = (state_ == STATE_OPERATION_ENABLED) &&
+    (last_state_ == STATE_OPERATION_ENABLED);
+  return initialized_;
+}
+
 
 void EcCiA402Drive::updateState()
 {
   if (status_word_ != last_status_word_) {
+    last_state_ = state_;
     state_ = deviceState(status_word_);
     if (state_ != last_state_) {
       std::cout << "STATE: " << DEVICE_STATE_STR.at(state_)
                 << " with status word :" << status_word_ << std::endl;
     }
   }
-  last_status_word_ = status_word_;
-  last_state_ = state_;
-  counter_++;
+  checkOperationEnabled();
+}
+
+bool EcCiA402Drive::activate()
+{
+  if (is_activated_) {
+    return checkOperationEnabled();
+  }
+  is_activated_ = true;
+  return false;
+}
+
+bool EcCiA402Drive::deactivate()
+{
+  is_activated_ = false;
+  if (checkOperationEnabled()) {
+    return false;
+  } else {
+    return true;
+  }
 }
 
 void EcCiA402Drive::processData(size_t entry_idx, uint8_t * domain_address)
@@ -103,6 +129,7 @@ void EcCiA402Drive::processData(size_t entry_idx, uint8_t * domain_address)
 
   // Special case: StatusWord
   if (channel.index == CiA402D_TPDO_STATUSWORD) {
+    last_status_word_ = status_word_;
     status_word_ = channel.last_value;
   }
 
@@ -110,6 +137,7 @@ void EcCiA402Drive::processData(size_t entry_idx, uint8_t * domain_address)
   // CHECK FOR STATE CHANGE
   if (entry_idx == domain_map_.size() - 1) {  // if last entry in domain
     updateState();
+    counter_++;
   }
 }
 
@@ -212,9 +240,17 @@ uint16_t EcCiA402Drive::transition(DeviceState state, uint16_t control_word)
     case STATE_READY_TO_SWITCH_ON:        // -> STATE_SWITCH_ON
       return (control_word & 0b01110111) | 0b00000111;
     case STATE_SWITCH_ON:                 // -> STATE_OPERATION_ENABLED
-      return (control_word & 0b01111111) | 0b00001111;
+      if (is_activated_) {
+        return (control_word & 0b01111111) | 0b00001111;
+      } else {
+        return control_word;
+      }
     case STATE_OPERATION_ENABLED:         // -> GOOD
-      return control_word;
+      if (is_activated_) {
+        return control_word;
+      } else {
+        return (control_word & 0b01110111) | 0b00000111;
+      }
     case STATE_QUICK_STOP_ACTIVE:         // -> STATE_OPERATION_ENABLED
       return (control_word & 0b01111111) | 0b00001111;
     case STATE_FAULT_REACTION_ACTIVE:     // -> STATE_FAULT (automatic)

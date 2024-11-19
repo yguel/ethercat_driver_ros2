@@ -68,7 +68,7 @@ public:
   virtual void run(SIMPLECAT_CONTRL_CALLBACK user_callback);
 
   /** stop the control loop. use within callback, or from a separate thread. */
-  virtual void stop() {running_ = false;}
+  virtual void stop();
 
   /** time of last ethercat update, since calling run. stops if stop called.
    *  returns actual time. use elapsedCycles()/frequency for discrete time at last update. */
@@ -100,6 +100,11 @@ public:
 
   virtual void readData(uint32_t domain = 0);
   virtual void writeData(uint32_t domain = 0);
+
+  /** check if all slaves are operational
+   * @return true if all slaves are operational, false otherwise
+  */
+  bool checkAllSlavesOperational();
 
 protected:
   /** true if running */

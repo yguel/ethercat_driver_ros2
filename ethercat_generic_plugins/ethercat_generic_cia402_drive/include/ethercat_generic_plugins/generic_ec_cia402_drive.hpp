@@ -38,7 +38,7 @@ public:
   virtual ~EcCiA402Drive();
   /** Returns true if drive has reached "operation enabled" state.
    *  The transition through the state machine is handled automatically. */
-  bool initialized() const;
+  bool initialized();
 
   virtual void processData(size_t entry_idx, uint8_t * domain_address);
 
@@ -51,6 +51,12 @@ public:
   int8_t mode_of_operation_ = -1;
 
   void updateState();
+
+public:
+  bool checkOperationEnabled();
+
+  bool activate();
+  bool deactivate();
 
 protected:
   uint32_t counter_ = 0;
@@ -65,6 +71,7 @@ protected:
   bool fault_reset_ = false;
   int fault_reset_command_interface_index_ = -1;
   bool last_fault_reset_command_ = false;
+  bool is_activated_ = false;
   double last_position_ = std::numeric_limits<double>::quiet_NaN();
 
   /** returns device state based upon the status_word */

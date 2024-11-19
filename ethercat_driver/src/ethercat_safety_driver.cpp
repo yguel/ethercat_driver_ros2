@@ -218,9 +218,10 @@ CallbackReturn CLASSM::on_init(
     return res;
   }
 
-  // Prevent the same module from being activated while being configured
-  const std::lock_guard<std::mutex> lock(ec_mutex_);
+  // Prevent the driver from being initialized while being configured
+  const std::lock_guard<std::mutex> lock(ec_configure_mutex_);
   activated_ = false;
+  configured_ = false;
 
   YAML::Node config;
   // Load the fsoe_config file
@@ -351,12 +352,12 @@ CallbackReturn CLASSM::setupMaster()
   return CallbackReturn::SUCCESS;
 }
 
-CallbackReturn CLASSM::on_activate(
+CallbackReturn CLASSM::on_configure(
   const rclcpp_lifecycle::State & /*previous_state*/)
 {
-  const std::lock_guard<std::mutex> lock(ec_mutex_);
-  if (activated_) {
-    RCLCPP_FATAL(rclcpp::get_logger("EthercatSafetyDriver"), "Double on_activate()");
+  const std::lock_guard<std::mutex> lock(ec_configure_mutex_);
+  if (configured_) {
+    RCLCPP_FATAL(rclcpp::get_logger("EthercatSafetyDriver"), "Double on_configure()");
     return CallbackReturn::ERROR;
   }
   RCLCPP_INFO(rclcpp::get_logger("EthercatSafetyDriver"), "Starting ...please wait...");
@@ -390,12 +391,14 @@ CallbackReturn CLASSM::on_activate(
     master_->update();
     RCLCPP_INFO(rclcpp::get_logger("EthercatSafetyDriver"), "updated!");
 
-    // check if operational
-    bool isAllInit = true;
+    // check if all slaves are operational
+    bool allOp = master_->checkAllSlavesOperational();
+    // check if configured
+    bool all_configured = true;
     for (auto & module : ec_modules_) {
-      isAllInit = isAllInit && module->initialized();
+      all_configured = all_configured && module->configure();
     }
-    if (isAllInit) {
+    if (allOp && all_configured) {
       running = false;
     }
     // calculate next shot. carry over nanoseconds into microseconds.
@@ -409,7 +412,7 @@ CallbackReturn CLASSM::on_activate(
   RCLCPP_INFO(
     rclcpp::get_logger("EthercatSafetyDriver"), "System Successfully started!");
 
-  activated_ = true;
+  configured_ = true;
 
   return CallbackReturn::SUCCESS;
 }

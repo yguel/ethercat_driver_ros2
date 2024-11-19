@@ -37,10 +37,7 @@ public:
   CallbackReturn on_init(const hardware_interface::HardwareInfo & info) override;
 
   ETHERCAT_DRIVER_PUBLIC
-  CallbackReturn on_activate(const rclcpp_lifecycle::State & previous_state) override;
-
-  // ETHERCAT_DRIVER_PUBLIC
-  // CallbackReturn on_deactivate(const rclcpp_lifecycle::State & previous_state) override;
+  CallbackReturn on_configure(const rclcpp_lifecycle::State & previous_state) override;
 
 protected:
   /** @brief Load FailSafe Over EtherCAT Safety config YAML file

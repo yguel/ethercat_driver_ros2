@@ -69,6 +69,11 @@ public:
     parameters_ = slave_parameters;
     return true;
   }
+  virtual bool configure() {return true;}
+  virtual bool cleanup() {return true;}
+  virtual bool activate() {return true;}
+  virtual bool deactivate() {return true;}
+  virtual bool shutdown() {return true;}
 
 public:
   inline

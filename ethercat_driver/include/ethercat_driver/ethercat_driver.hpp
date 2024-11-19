@@ -48,6 +48,9 @@ public:
   CallbackReturn on_configure(const rclcpp_lifecycle::State & previous_state) override;
 
   ETHERCAT_DRIVER_PUBLIC
+  CallbackReturn on_cleanup(const rclcpp_lifecycle::State & previous_state) override;
+
+  ETHERCAT_DRIVER_PUBLIC
   std::vector<hardware_interface::StateInterface> export_state_interfaces() override;
 
   ETHERCAT_DRIVER_PUBLIC
@@ -58,6 +61,9 @@ public:
 
   ETHERCAT_DRIVER_PUBLIC
   CallbackReturn on_deactivate(const rclcpp_lifecycle::State & previous_state) override;
+
+  ETHERCAT_DRIVER_PUBLIC
+  CallbackReturn on_shutdown(const rclcpp_lifecycle::State & previous_state) override;
 
   ETHERCAT_DRIVER_PUBLIC
   hardware_interface::return_type read(const rclcpp::Time &, const rclcpp::Duration &) override;
@@ -96,7 +102,9 @@ protected:
   double control_frequency_;
 
   std::shared_ptr<ethercat_interface::EcMaster> master_;
-  std::mutex ec_mutex_;
+  std::mutex ec_configure_mutex_;
+  bool configured_;
+  std::mutex ec_activate_mutex_;
   bool activated_;
 };
 }  // namespace ethercat_driver
