@@ -106,6 +106,9 @@ protected:
   bool configured_;
   std::mutex ec_activate_mutex_;
   bool activated_;
+
+protected:
+  rclcpp::Duration activate_timeout_ = rclcpp::Duration(10, 0);  // 10 seconds
 };
 }  // namespace ethercat_driver
 

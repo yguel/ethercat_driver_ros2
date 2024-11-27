@@ -418,6 +418,9 @@ CallbackReturn EthercatDriver::on_activate(
     return CallbackReturn::ERROR;
   }
   RCLCPP_INFO(rclcpp::get_logger("EthercatDriver"), "Starting ...please wait...");
+  // Create a monotonic clock
+  rclcpp::Clock steady_clock(RCL_STEADY_TIME);
+  rclcpp::Time time_begin = steady_clock.now();
 
   // start after one second
   struct timespec t;
@@ -438,6 +441,14 @@ CallbackReturn EthercatDriver::on_activate(
       running = false;
       break;
     }
+    // Check if we have reached the timeout
+    if ((steady_clock.now() - time_begin) > activate_timeout_) {
+      RCLCPP_WARN(
+        rclcpp::get_logger("EthercatDriver"),
+        "Activate. Timeout reached. Not all slaves activated.");
+      return CallbackReturn::FAILURE;
+    }
+
     // calculate next shot. carry over nanoseconds into microseconds.
     t.tv_nsec += master_->getInterval();
     while (t.tv_nsec >= 1000000000) {
