@@ -202,6 +202,17 @@ CallbackReturn EthercatDriver::on_init(
   return CallbackReturn::SUCCESS;
 }
 
+bool EthercatDriver::deactivate_all_modules()
+{
+  bool deactivate_success = true;
+
+  for (auto & module : ec_modules_) {
+    deactivate_success = deactivate_success && module->deactivate();
+    return deactivate_success;
+  }
+  return deactivate_success;
+}
+
 CallbackReturn EthercatDriver::on_configure(
   const rclcpp_lifecycle::State & /*previous_state*/)
 {
@@ -232,13 +243,13 @@ CallbackReturn EthercatDriver::on_configure(
   while (running) {
     // wait until next shot
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
-    // update EtherCAT bus
 
+    // update EtherCAT bus
     master_->update();
-    RCLCPP_INFO(rclcpp::get_logger("EthercatDriver"), "updated!");
 
     // check if all slaves are operational
     bool allOp = master_->checkAllSlavesOperational();
+
     // check if configured
     bool all_configured = true;
     for (auto & module : ec_modules_) {
@@ -247,6 +258,7 @@ CallbackReturn EthercatDriver::on_configure(
     if (allOp && all_configured) {
       running = false;
     }
+
     // calculate next shot. carry over nanoseconds into microseconds.
     t.tv_nsec += master_->getInterval();
     while (t.tv_nsec >= 1000000000) {
@@ -430,7 +442,6 @@ CallbackReturn EthercatDriver::on_activate(
   while (running) {
     // update EtherCAT bus
     master_->update();
-    RCLCPP_INFO(rclcpp::get_logger("EthercatDriver"), "updated!");
 
     // Activate all modules
     bool all_activated = true;
@@ -441,11 +452,19 @@ CallbackReturn EthercatDriver::on_activate(
       running = false;
       break;
     }
+
     // Check if we have reached the timeout
     if ((steady_clock.now() - time_begin) > activate_timeout_) {
       RCLCPP_WARN(
         rclcpp::get_logger("EthercatDriver"),
         "Activate. Timeout reached. Not all slaves activated.");
+      bool deactivate_success = deactivate_all_modules();
+      if (!deactivate_success) {
+        RCLCPP_ERROR(
+          rclcpp::get_logger("EthercatDriver"),
+          "Failed to deactivate all modules after timeout");
+        return CallbackReturn::ERROR;
+      }
       return CallbackReturn::FAILURE;
     }
 
@@ -501,10 +520,14 @@ CallbackReturn EthercatDriver::on_cleanup(
       }
       // wait until next shot
       clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
+      RCLCPP_INFO(rclcpp::get_logger("EthercatDriver"), "please wait...");
     }
 
     // stop EC and disconnect
+    RCLCPP_INFO(rclcpp::get_logger("EthercatDriver"), "disconnect master");
     master_->stop();
+
+    RCLCPP_INFO(rclcpp::get_logger("EthercatDriver"), "free master");
     master_.reset();
     configured_ = false;
   }
@@ -528,10 +551,7 @@ CallbackReturn EthercatDriver::on_deactivate(
     bool running = true;
     while (running) {
       // Try deactivating all modules
-      bool all_deactivated = true;
-      for (auto & module : ec_modules_) {
-        all_deactivated = all_deactivated && module->deactivate();
-      }
+      bool all_deactivated = deactivate_all_modules();
       if (all_deactivated) {
         running = false;
         break;
@@ -619,7 +639,8 @@ std::vector<std::unordered_map<std::string, std::string>> EthercatDriver::getEcM
   std::unordered_map<std::string, std::string> module_param;
 
   while (ros2_control_it) {
-    const auto * ros2_control_child_it = ros2_control_it->FirstChildElement(component_type.c_str());
+    const auto * ros2_control_child_it =
+      ros2_control_it->FirstChildElement(component_type.c_str());
     while (ros2_control_child_it) {
       if (!component_name.compare(ros2_control_child_it->Attribute("name"))) {
         const auto * ec_module_it = ros2_control_child_it->FirstChildElement("ec_module");

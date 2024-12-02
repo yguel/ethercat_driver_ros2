@@ -16,6 +16,8 @@
 
 #include <numeric>
 
+#include "rclcpp/rclcpp.hpp"
+
 #include "ethercat_generic_plugins/generic_ec_cia402_drive.hpp"
 
 namespace ethercat_generic_plugins
@@ -37,8 +39,8 @@ bool EcCiA402Drive::checkOperationEnabled()
 
 void EcCiA402Drive::updateState()
 {
+  last_state_ = state_;
   if (status_word_ != last_status_word_) {
-    last_state_ = state_;
     state_ = deviceState(status_word_);
     if (state_ != last_state_) {
       std::cout << "STATE: " << DEVICE_STATE_STR.at(state_)
@@ -168,6 +170,10 @@ bool EcCiA402Drive::setupSlave(
 
   if (parameters_.find("command_interface/reset_fault") != parameters_.end()) {
     fault_reset_command_interface_index_ = std::stoi(parameters_["command_interface/reset_fault"]);
+    RCLCPP_INFO(
+      rclcpp::get_logger(
+        "EthercatDriver"), "fault_reset_command_interface_index_:%d",
+      fault_reset_command_interface_index_);
   }
 
   return true;

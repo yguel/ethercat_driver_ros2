@@ -72,16 +72,20 @@ EcMaster::~EcMaster()
     for (auto & entry : domain.second->entries) {
       if (entry.offset != NULL) {
         delete[] entry.offset;
+        entry.offset = NULL;
       }
       if (entry.bit_position != NULL) {
         delete[] entry.bit_position;
+        entry.bit_position = NULL;
       }
       if (entry.offset_in_memory != NULL) {
         delete[] entry.offset_in_memory;
+        entry.offset_in_memory = NULL;
       }
     }
     if (domain.second != NULL) {
       delete domain.second;
+      domain.second = NULL;
     }
   }
 }

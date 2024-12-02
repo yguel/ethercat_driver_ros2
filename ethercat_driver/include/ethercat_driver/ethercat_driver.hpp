@@ -85,6 +85,8 @@ protected:
 
   CallbackReturn configNetwork();
 
+  bool deactivate_all_modules();
+
 protected:
   std::vector<std::shared_ptr<ethercat_interface::EcSlave>> ec_modules_;
   std::vector<std::unordered_map<std::string, std::string>> ec_module_parameters_;
@@ -109,6 +111,7 @@ protected:
 
 protected:
   rclcpp::Duration activate_timeout_ = rclcpp::Duration(10, 0);  // 10 seconds
+  rclcpp::Duration deactivate_timeout_ = rclcpp::Duration(10, 0);  // 10 seconds
 };
 }  // namespace ethercat_driver
 
