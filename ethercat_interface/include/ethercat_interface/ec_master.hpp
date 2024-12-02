@@ -22,6 +22,9 @@
 #include <vector>
 #include <map>
 #include <chrono>
+
+#include "rclcpp/rclcpp.hpp"
+
 #include "ethercat_interface/ec_slave.hpp"
 
 
@@ -96,6 +99,11 @@ public:
     interval_ = 1000000000.0 / frequency;
   }
 
+  /**
+   * @brief get the time interval between control loops in nanoseconds
+   *
+   * @return uint32_t time interval in nanoseconds
+   */
   uint32_t getInterval() {return interval_;}
 
   virtual void readData(uint32_t domain = 0);
@@ -186,6 +194,7 @@ protected:
    *  state checked every frequency_ control loops */
   uint32_t check_state_frequency_ = 10;
 
+  /** time interval between control loops in nanoseconds */
   uint32_t interval_;
 
 protected:

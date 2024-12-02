@@ -47,6 +47,7 @@ CallbackReturn EthercatDriver::on_init(
   const std::lock_guard<std::mutex> lock(ec_configure_mutex_);
   activated_ = false;
   configured_ = false;
+  monotonic_clock_ = rclcpp::Clock(RCL_STEADY_TIME);
 
   hw_joint_states_.resize(info_.joints.size());
   for (uint j = 0; j < info_.joints.size(); j++) {
@@ -235,14 +236,13 @@ CallbackReturn EthercatDriver::on_configure(
   RCLCPP_INFO(rclcpp::get_logger("EthercatDriver"), "Activated EtherCAT Master!");
 
   // start after one second
-  struct timespec t;
-  clock_gettime(CLOCK_MONOTONIC, &t);
-  t.tv_sec++;
+  rclcpp::Duration sleep_duration = rclcpp::Duration(1, 0);
 
   bool running = true;
   while (running) {
     // wait until next shot
-    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
+    rclcpp::sleep_for(std::chrono::nanoseconds(sleep_duration.nanoseconds()));
+    const rclcpp::Time time_iter_start = monotonic_clock_.now();
 
     // update EtherCAT bus
     master_->update();
@@ -259,12 +259,10 @@ CallbackReturn EthercatDriver::on_configure(
       running = false;
     }
 
-    // calculate next shot. carry over nanoseconds into microseconds.
-    t.tv_nsec += master_->getInterval();
-    while (t.tv_nsec >= 1000000000) {
-      t.tv_nsec -= 1000000000;
-      t.tv_sec++;
-    }
+    // calculate next shot.
+    const rclcpp::Time time_iter_end = time_iter_start +
+      rclcpp::Duration(0, master_->getInterval());
+    sleep_duration = time_iter_end - monotonic_clock_.now();
   }
 
   RCLCPP_INFO(
@@ -430,16 +428,14 @@ CallbackReturn EthercatDriver::on_activate(
     return CallbackReturn::ERROR;
   }
   RCLCPP_INFO(rclcpp::get_logger("EthercatDriver"), "Starting ...please wait...");
-  // Create a monotonic clock
-  rclcpp::Clock steady_clock(RCL_STEADY_TIME);
-  rclcpp::Time time_begin = steady_clock.now();
 
-  // start after one second
-  struct timespec t;
-  clock_gettime(CLOCK_MONOTONIC, &t);
+  rclcpp::Time time_begin = monotonic_clock_.now();
+
+  rclcpp::Duration sleep_duration(0, 0);
 
   bool running = true;
   while (running) {
+    const rclcpp::Time time_iter_start = monotonic_clock_.now();
     // update EtherCAT bus
     master_->update();
 
@@ -454,7 +450,7 @@ CallbackReturn EthercatDriver::on_activate(
     }
 
     // Check if we have reached the timeout
-    if ((steady_clock.now() - time_begin) > activate_timeout_) {
+    if ((monotonic_clock_.now() - time_begin) > activate_timeout_) {
       RCLCPP_WARN(
         rclcpp::get_logger("EthercatDriver"),
         "Activate. Timeout reached. Not all slaves activated.");
@@ -468,14 +464,12 @@ CallbackReturn EthercatDriver::on_activate(
       return CallbackReturn::FAILURE;
     }
 
-    // calculate next shot. carry over nanoseconds into microseconds.
-    t.tv_nsec += master_->getInterval();
-    while (t.tv_nsec >= 1000000000) {
-      t.tv_nsec -= 1000000000;
-      t.tv_sec++;
-    }
+    // calculate next shot.
+    const rclcpp::Time time_iter_end = time_iter_start +
+      rclcpp::Duration(0, master_->getInterval());
+    sleep_duration = time_iter_end - monotonic_clock_.now();
     // wait until next shot
-    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
+    rclcpp::sleep_for(std::chrono::nanoseconds(sleep_duration.nanoseconds()));
   }
 
   RCLCPP_INFO(
@@ -497,11 +491,15 @@ CallbackReturn EthercatDriver::on_cleanup(
 
     RCLCPP_INFO(rclcpp::get_logger("EthercatDriver"), "Stopping communication ...please wait...");
 
-    struct timespec t;
-    clock_gettime(CLOCK_MONOTONIC, &t);
+    rclcpp::Duration sleep_duration(0, 0);
 
     bool running = true;
     while (running) {
+      const rclcpp::Time time_iter_start = monotonic_clock_.now();
+
+      // update EtherCAT bus
+      master_->update();
+
       // Try calling cleanup on all modules
       bool all_cleanup = true;
       for (auto & module : ec_modules_) {
@@ -512,14 +510,13 @@ CallbackReturn EthercatDriver::on_cleanup(
         break;
       }
 
-      // calculate next shot. carry over nanoseconds into microseconds.
-      t.tv_nsec += master_->getInterval();
-      while (t.tv_nsec >= 1000000000) {
-        t.tv_nsec -= 1000000000;
-        t.tv_sec++;
-      }
+      // calculate next shot.
+      const rclcpp::Time time_iter_end = time_iter_start + rclcpp::Duration(
+        0,
+        master_->getInterval());
+      sleep_duration = time_iter_end - monotonic_clock_.now();
       // wait until next shot
-      clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
+      rclcpp::sleep_for(std::chrono::nanoseconds(sleep_duration.nanoseconds()));
       RCLCPP_INFO(rclcpp::get_logger("EthercatDriver"), "please wait...");
     }
 
@@ -545,11 +542,15 @@ CallbackReturn EthercatDriver::on_deactivate(
   if (configured_ && activated_) {
     RCLCPP_INFO(rclcpp::get_logger("EthercatDriver"), "Deactivating ...please wait...");
 
-    struct timespec t;
-    clock_gettime(CLOCK_MONOTONIC, &t);
+    rclcpp::Duration sleep_duration(0, 0);
 
     bool running = true;
     while (running) {
+      const rclcpp::Time time_iter_start = monotonic_clock_.now();
+
+      // update EtherCAT bus
+      master_->update();
+
       // Try deactivating all modules
       bool all_deactivated = deactivate_all_modules();
       if (all_deactivated) {
@@ -557,14 +558,14 @@ CallbackReturn EthercatDriver::on_deactivate(
         break;
       }
 
-      // calculate next shot. carry over nanoseconds into microseconds.
-      t.tv_nsec += master_->getInterval();
-      while (t.tv_nsec >= 1000000000) {
-        t.tv_nsec -= 1000000000;
-        t.tv_sec++;
-      }
+      // calculate next shot.
+      const rclcpp::Time time_iter_end = time_iter_start + rclcpp::Duration(
+        0,
+        master_->getInterval());
+      sleep_duration = time_iter_end - monotonic_clock_.now();
+
       // wait until next shot
-      clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
+      rclcpp::sleep_for(std::chrono::nanoseconds(sleep_duration.nanoseconds()));
     }
     activated_ = false;
   }

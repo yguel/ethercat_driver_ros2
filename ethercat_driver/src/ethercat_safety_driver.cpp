@@ -378,16 +378,18 @@ CallbackReturn CLASSM::on_configure(
   safety_->registerTransferInDomain(ec_safety_nets_);
 
   // start after one second
-  struct timespec t;
-  clock_gettime(CLOCK_MONOTONIC, &t);
-  t.tv_sec++;
+  // Create a monotonic clock
+  rclcpp::Clock steady_clock(RCL_STEADY_TIME);
+  rclcpp::Duration sleep_duration = rclcpp::Duration(1, 0);
+
 
   bool running = true;
   while (running) {
     // wait until next shot
-    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
-    // update EtherCAT bus
+    rclcpp::sleep_for(std::chrono::nanoseconds(sleep_duration.nanoseconds()));
+    const rclcpp::Time time_iter_start = steady_clock.now();
 
+    // update EtherCAT bus
     master_->update();
     RCLCPP_INFO(rclcpp::get_logger("EthercatSafetyDriver"), "updated!");
 
@@ -401,12 +403,9 @@ CallbackReturn CLASSM::on_configure(
     if (allOp && all_configured) {
       running = false;
     }
-    // calculate next shot. carry over nanoseconds into microseconds.
-    t.tv_nsec += master_->getInterval();
-    while (t.tv_nsec >= 1000000000) {
-      t.tv_nsec -= 1000000000;
-      t.tv_sec++;
-    }
+    // calculate next shot.
+    rclcpp::Time time_iter_end = time_iter_start + rclcpp::Duration(0, master_->getInterval());
+    sleep_duration = time_iter_end - steady_clock.now();
   }
 
   RCLCPP_INFO(

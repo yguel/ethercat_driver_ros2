@@ -396,15 +396,16 @@ void EcMaster::setCtrlCHandler(SIMPLECAT_EXIT_CALLBACK user_callback)
 void EcMaster::run(SIMPLECAT_CONTRL_CALLBACK user_callback)
 {
   // start after one second
-  struct timespec t;
-  clock_gettime(CLOCK_MONOTONIC, &t);
-  t.tv_sec++;
+  rclcpp::Clock steady_clock(RCL_STEADY_TIME);
+  rclcpp::Duration sleep_duration = rclcpp::Duration(1, 0);
+
 
   running_ = true;
   start_t_ = std::chrono::system_clock::now();
   while (running_) {
     // wait until next shot
-    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &t, NULL);
+    rclcpp::sleep_for(std::chrono::nanoseconds(sleep_duration.nanoseconds()));
+    const rclcpp::Time time_iter_start = steady_clock.now();
 
     // update EtherCAT bus
     this->update();
@@ -415,12 +416,10 @@ void EcMaster::run(SIMPLECAT_CONTRL_CALLBACK user_callback)
     // user callback
     user_callback();
 
-    // calculate next shot. carry over nanoseconds into microseconds.
-    t.tv_nsec += interval_;
-    while (t.tv_nsec >= 1000000000) {
-      t.tv_nsec -= 1000000000;
-      t.tv_sec++;
-    }
+    // calculate next shot.
+    const rclcpp::Time time_iter_end = time_iter_start +
+      rclcpp::Duration(0, interval_);
+    sleep_duration = time_iter_end - steady_clock.now();
   }
 }
 
