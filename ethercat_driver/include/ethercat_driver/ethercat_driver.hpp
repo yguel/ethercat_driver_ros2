@@ -119,6 +119,7 @@ protected:
   rclcpp::Clock monotonic_clock_;
   rclcpp::Duration activate_timeout_ = rclcpp::Duration(10, 0);  // 10 seconds
   rclcpp::Duration deactivate_timeout_ = rclcpp::Duration(10, 0);  // 10 seconds
+  rclcpp::Duration cleanup_timeout_ = rclcpp::Duration(10, 0);  // 10 seconds
 };
 }  // namespace ethercat_driver
 

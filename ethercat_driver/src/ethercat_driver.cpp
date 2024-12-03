@@ -529,10 +529,18 @@ CallbackReturn EthercatDriver::on_cleanup(
     RCLCPP_INFO(rclcpp::get_logger("EthercatDriver"), "Stopping communication ...please wait...");
 
     rclcpp::Duration sleep_duration(0, 0);
+    const rclcpp::Time time_begin = monotonic_clock_.now();
 
     bool running = true;
     while (running) {
       const rclcpp::Time time_iter_start = monotonic_clock_.now();
+      if (time_iter_start - time_begin > cleanup_timeout_) {
+        RCLCPP_ERROR(
+          rclcpp::get_logger("EthercatDriver"),
+          "Timeout reached while cleaning up modules");
+        running = false;
+        break;
+      }
 
       // update EtherCAT bus
       master_->update();
@@ -554,7 +562,6 @@ CallbackReturn EthercatDriver::on_cleanup(
       sleep_duration = time_iter_end - monotonic_clock_.now();
       // wait until next shot
       rclcpp::sleep_for(std::chrono::nanoseconds(sleep_duration.nanoseconds()));
-      RCLCPP_INFO(rclcpp::get_logger("EthercatDriver"), "please wait...");
     }
 
     // stop EC and disconnect
@@ -592,9 +599,10 @@ CallbackReturn EthercatDriver::on_deactivate(
 }
 
 CallbackReturn EthercatDriver::on_error(
-  const rclcpp_lifecycle::State & /*previous_state*/)
+  const rclcpp_lifecycle::State & previous_state)
 {
   RCLCPP_INFO(rclcpp::get_logger("EthercatDriver"), "Error state reached");
+  on_cleanup(previous_state);
   return CallbackReturn::SUCCESS;
 }
 
