@@ -139,8 +139,13 @@ protected:
   /** check for change in the slave states */
   void checkSlaveStates();
 
-  /** print warning message to terminal */
-  static void printWarning(const std::string & message);
+  /** print warning message to logger */
+  inline
+  static
+  void printWarning(const std::string & message)
+  {
+    RCLCPP_WARN(rclcpp::get_logger("EthercatDriver"), "WARNING. Master. %s", message.c_str());
+  }
 
   /** EtherCAT master data */
   ec_master_t * master_ = NULL;

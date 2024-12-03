@@ -228,12 +228,16 @@ void EcMaster::registerPDOInDomain(
 
 
     // print the domain pdo entry
-    std::cout << "{" << pdo_reg.alias << ", " << pdo_reg.position;
-    std::cout << ", 0x" << std::hex << pdo_reg.vendor_id;
-    std::cout << ", 0x" << std::hex << pdo_reg.product_code;
-    std::cout << ", 0x" << std::hex << pdo_reg.index;
-    std::cout << ", 0x" << std::hex << static_cast<int>(pdo_reg.subindex);
-    std::cout << "}" << std::dec << std::endl;
+    RCLCPP_INFO(
+      rclcpp::get_logger("EthercatDriver"),
+      "{ %d, %d, 0x%x, 0x%x, 0x%x, 0x%x }",
+      pdo_reg.alias,
+      pdo_reg.position,
+      pdo_reg.vendor_id,
+      pdo_reg.product_code,
+      pdo_reg.index,
+      static_cast<int>(pdo_reg.subindex)
+    );
   }
 
   // set the last element to null
@@ -482,10 +486,18 @@ void EcMaster::checkDomainState(uint32_t domain)
   ecrt_domain_state(domain_info->domain, &ds);
 
   if (ds.working_counter != domain_info->domain_state.working_counter) {
-    printf("Domain: WC %u.\n", ds.working_counter);
+    RCLCPP_INFO(rclcpp::get_logger("EthercatDriver"), "Domain: WC %d.", ds.working_counter);
   }
   if (ds.wc_state != domain_info->domain_state.wc_state) {
-    printf("Domain: State %u.\n", ds.wc_state);
+    RCLCPP_INFO(
+      rclcpp::get_logger("EthercatDriver"),
+      "Domain: State %s.",
+      ds.wc_state == EC_WC_ZERO ? "ZERO" :
+      (
+        (ds.wc_state == EC_WC_INCOMPLETE) ? "INCOMPLETE" :
+        (ds.wc_state == EC_WC_COMPLETE) ? "COMPLETE" : "UNKNOWN"
+      )
+    );
   }
   domain_info->domain_state = ds;
 }
@@ -497,13 +509,13 @@ void EcMaster::checkMasterState()
   ecrt_master_state(master_, &ms);
 
   if (ms.slaves_responding != master_state_.slaves_responding) {
-    printf("%u slave(s).\n", ms.slaves_responding);
+    RCLCPP_WARN(rclcpp::get_logger("EthercatDriver"), "%d slave(s).", ms.slaves_responding);
   }
   if (ms.al_states != master_state_.al_states) {
-    printf("Master AL states: 0x%02X.\n", ms.al_states);
+    RCLCPP_WARN(rclcpp::get_logger("EthercatDriver"), "Master AL states: 0x%02X.", ms.al_states);
   }
   if (ms.link_up != master_state_.link_up) {
-    printf("Link is %s.\n", ms.link_up ? "up" : "down");
+    RCLCPP_WARN(rclcpp::get_logger("EthercatDriver"), "Link is %s.", ms.link_up ? "up" : "down");
   }
   master_state_ = ms;
 }
@@ -517,16 +529,22 @@ void EcMaster::checkSlaveStates()
 
     if (s.al_state != slave.config_state.al_state) {
       // this spams the terminal at initialization.
-      printf("Slave: State 0x%02X.\n", s.al_state);
+      RCLCPP_WARN(rclcpp::get_logger("EthercatDriver"), "Slave: State 0x%02X.", s.al_state);
     }
     if (s.online != slave.config_state.online) {
-      printf("Slave: %s.\n", s.online ? "online" : "offline");
+      RCLCPP_WARN(
+        rclcpp::get_logger(
+          "EthercatDriver"), "Slave: %s.", s.online ? "online" : "offline");
     }
     if (s.operational != slave.config_state.operational) {
-      printf(
-        "Slave (alias:%d ,pos:%d ,vendor_id: %d, prod_id: %d) --> %soperational.\n",
-        slave.slave->alias_, slave.slave->position_, slave.slave->vendor_id_,
-        slave.slave->product_id_, s.operational ? "" : "Not ");
+      RCLCPP_WARN(
+        rclcpp::get_logger("EthercatDriver"),
+        "Slave: (alias: %d, pos: %d, vendor_id: %d, prod_id: %d) --> %soperational.",
+        slave.slave->alias_,
+        slave.slave->position_,
+        slave.slave->vendor_id_,
+        slave.slave->product_id_,
+        s.operational ? "" : "NOT ");
       slave.slave->set_state_is_operational(s.operational ? true : false);
     }
     slave.config_state = s;
@@ -549,11 +567,6 @@ void EcMaster::stop()
 {
   running_ = false;
   ecrt_release_master(master_);
-}
-
-void EcMaster::printWarning(const std::string & message)
-{
-  std::cout << "WARNING. Master. " << message << std::endl;
 }
 
 }  // namespace ethercat_interface

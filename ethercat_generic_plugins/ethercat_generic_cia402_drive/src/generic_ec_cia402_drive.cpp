@@ -43,8 +43,12 @@ void EcCiA402Drive::updateState()
   if (status_word_ != last_status_word_) {
     state_ = deviceState(status_word_);
     if (state_ != last_state_) {
-      std::cout << "STATE: " << DEVICE_STATE_STR.at(state_)
-                << " with status word :" << status_word_ << std::endl;
+      RCLCPP_INFO(
+        rclcpp::get_logger("EthercatDriver"),
+        "STATE: %s with status word :%d",
+        DEVICE_STATE_STR.at(state_).c_str(),
+        status_word_
+      );
     }
   }
   checkOperationEnabled();

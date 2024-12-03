@@ -53,7 +53,7 @@ void EcSafety::registerTransferInDomain(const std::vector<EcSafetyNet> & safety_
     for (auto & transfer : net.transfers) {
       EcTransferInfo transfer_info;
       transfer_info.size = transfer.size;
-      std::cout << "Size: " << transfer_info.size << std::endl;
+      RCLCPP_INFO(rclcpp::get_logger("EthercatDriver"), "Transfer size: %ld", transfer.size);
       /**
        * For the input and the output of the transfer find
        *   1. the process domain data pointer
@@ -74,13 +74,14 @@ void EcSafety::registerTransferInDomain(const std::vector<EcSafetyNet> & safety_
             transfer_info.input_domain = &domain;
             // 3. Compute the pointer arithmetic and store the result in the EcTransferInfo object
             transfer_info.in_ptr = domain.domain_pd + *(domain_reg.offset);
-            std::cout << "esclave position: " << domain_reg.position << std::endl;
-            std::ios oldState(nullptr);
-            oldState.copyfmt(std::cout);
-            std::cout << "index: 0x" << std::hex << domain_reg.index << std::endl;
-            std::cout.copyfmt(oldState);
-            std::cout << "in offset: " << *(domain_reg.offset) << std::endl;
-            std::cout << std::endl;
+
+            RCLCPP_INFO(
+              rclcpp::get_logger("EthercatDriver"),
+              "Transfer input:  esclave position: %d / index: 0x%x / in offset:  %d",
+              domain_reg.position,
+              domain_reg.index,
+              *(domain_reg.offset)
+            );
           }
           // Find match for output
           if (domain_reg.alias == transfer.output.alias &&
@@ -91,13 +92,13 @@ void EcSafety::registerTransferInDomain(const std::vector<EcSafetyNet> & safety_
             transfer_info.output_domain = &domain;
             // 3. Compute the pointer arithmetic and store the result in the EcTransferInfo object
             transfer_info.out_ptr = domain.domain_pd + *(domain_reg.offset);
-            std::cout << "esclave position: " << domain_reg.position << std::endl;
-            std::ios oldState(nullptr);
-            oldState.copyfmt(std::cout);
-            std::cout << "index: 0x" << std::hex << domain_reg.index << std::endl;
-            std::cout.copyfmt(oldState);
-            std::cout << "out offset: " << *(domain_reg.offset) << std::endl;
-            std::cout << std::endl;
+            RCLCPP_INFO(
+              rclcpp::get_logger("EthercatDriver"),
+              "Transfer output: slave position: %d / index: 0x%x / out offset: %d",
+              domain_reg.position,
+              domain_reg.index,
+              *(domain_reg.offset)
+            );
           }
         }
       }

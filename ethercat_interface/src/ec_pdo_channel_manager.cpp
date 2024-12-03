@@ -17,6 +17,9 @@
 #include <algorithm>
 #include <iostream>
 // #include <bitset> // For debugging purpose
+
+#include <rclcpp/rclcpp.hpp>
+
 #include "ethercat_interface/ec_pdo_channel_manager.hpp"
 
 namespace ethercat_interface
@@ -112,13 +115,13 @@ CLASSM::~EcPdoChannelManager() {
 
 ec_pdo_entry_info_t CLASSM::get_pdo_entry_info()
 {
-  // TODO(@yguel@unistra): Use ROS2 logging
-  std::ios oldState(nullptr);
-  oldState.copyfmt(std::cout);
-  std::cout << "{0x" << std::hex << index << ", 0x"
-            << static_cast<uint16_t>(sub_index) << ", ";
-  std::cout.copyfmt(oldState);
-  std::cout << static_cast<int>(pdo_bits()) << "}," << std::endl;
+  RCLCPP_INFO(
+    rclcpp::get_logger("EcPdoChannelManager"),
+    "{0x%x, 0x%x, %d}",
+    index,
+    static_cast<uint16_t>(sub_index),
+    static_cast<int>(pdo_bits())
+  );
 
   return {index, sub_index, pdo_bits()};
 }

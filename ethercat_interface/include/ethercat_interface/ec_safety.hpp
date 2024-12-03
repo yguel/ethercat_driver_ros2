@@ -120,7 +120,7 @@ protected:
    *
    * @param[out] os Output stream
   */
-  void printMemoryFrames(std::ostream & os = std::cout);
+  void printMemoryFrames(std::ostream & os);
 
   /** @brief Get pointer on memory frame for a certain point
    * in the frame defined by a slave position, an index and a subindex

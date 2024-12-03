@@ -603,6 +603,7 @@ CallbackReturn EthercatDriver::on_error(
 {
   RCLCPP_INFO(rclcpp::get_logger("EthercatDriver"), "Error state reached");
   on_cleanup(previous_state);
+
   return CallbackReturn::SUCCESS;
 }
 
