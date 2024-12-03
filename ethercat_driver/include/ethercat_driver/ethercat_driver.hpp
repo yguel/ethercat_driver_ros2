@@ -66,6 +66,9 @@ public:
   CallbackReturn on_shutdown(const rclcpp_lifecycle::State & previous_state) override;
 
   ETHERCAT_DRIVER_PUBLIC
+  CallbackReturn on_error(const rclcpp_lifecycle::State & previous_state) override;
+
+  ETHERCAT_DRIVER_PUBLIC
   hardware_interface::return_type read(const rclcpp::Time &, const rclcpp::Duration &) override;
 
   ETHERCAT_DRIVER_PUBLIC
@@ -85,7 +88,10 @@ protected:
 
   CallbackReturn configNetwork();
 
-  bool deactivate_all_modules();
+  bool deactivate_all_modules(const rclcpp::Duration & timeout);
+
+protected:
+  bool deactivate_all_modules_once();
 
 protected:
   std::vector<std::shared_ptr<ethercat_interface::EcSlave>> ec_modules_;

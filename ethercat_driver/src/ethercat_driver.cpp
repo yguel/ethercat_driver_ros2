@@ -203,15 +203,52 @@ CallbackReturn EthercatDriver::on_init(
   return CallbackReturn::SUCCESS;
 }
 
-bool EthercatDriver::deactivate_all_modules()
+bool EthercatDriver::deactivate_all_modules_once()
 {
   bool deactivate_success = true;
 
   for (auto & module : ec_modules_) {
     deactivate_success = deactivate_success && module->deactivate();
-    return deactivate_success;
   }
   return deactivate_success;
+}
+
+bool EthercatDriver::deactivate_all_modules(const rclcpp::Duration & timeout)
+{
+  const rclcpp::Time start = monotonic_clock_.now();
+
+  bool running = true;
+  rclcpp::Duration sleep_duration(0, 0);
+
+  while (running) {
+    const rclcpp::Time time_iter_start = monotonic_clock_.now();
+    if (time_iter_start - start > timeout) {
+      RCLCPP_WARN(
+        rclcpp::get_logger("EthercatDriver"),
+        "Timeout reached while deactivating modules");
+      return false;
+    }
+
+    // update EtherCAT bus
+    master_->update();
+
+    // Try deactivating all modules
+    bool all_deactivated = deactivate_all_modules_once();
+    if (all_deactivated) {
+      running = false;
+      break;
+    }
+
+    // calculate next shot.
+    const rclcpp::Time time_iter_end = time_iter_start + rclcpp::Duration(
+      0,
+      master_->getInterval());
+    sleep_duration = time_iter_end - monotonic_clock_.now();
+
+    // wait until next shot
+    rclcpp::sleep_for(std::chrono::nanoseconds(sleep_duration.nanoseconds()));
+  }
+  return true;
 }
 
 CallbackReturn EthercatDriver::on_configure(
@@ -454,7 +491,7 @@ CallbackReturn EthercatDriver::on_activate(
       RCLCPP_WARN(
         rclcpp::get_logger("EthercatDriver"),
         "Activate. Timeout reached. Not all slaves activated.");
-      bool deactivate_success = deactivate_all_modules();
+      bool deactivate_success = deactivate_all_modules(deactivate_timeout_);
       if (!deactivate_success) {
         RCLCPP_ERROR(
           rclcpp::get_logger("EthercatDriver"),
@@ -544,35 +581,20 @@ CallbackReturn EthercatDriver::on_deactivate(
 
     rclcpp::Duration sleep_duration(0, 0);
 
-    bool running = true;
-    while (running) {
-      const rclcpp::Time time_iter_start = monotonic_clock_.now();
-
-      // update EtherCAT bus
-      master_->update();
-
-      // Try deactivating all modules
-      bool all_deactivated = deactivate_all_modules();
-      if (all_deactivated) {
-        running = false;
-        break;
-      }
-
-      // calculate next shot.
-      const rclcpp::Time time_iter_end = time_iter_start + rclcpp::Duration(
-        0,
-        master_->getInterval());
-      sleep_duration = time_iter_end - monotonic_clock_.now();
-
-      // wait until next shot
-      rclcpp::sleep_for(std::chrono::nanoseconds(sleep_duration.nanoseconds()));
-    }
+    deactivate_all_modules(deactivate_timeout_);
     activated_ = false;
   }
 
   RCLCPP_INFO(
     rclcpp::get_logger("EthercatDriver"), "All slaves successfully deactivated!");
 
+  return CallbackReturn::SUCCESS;
+}
+
+CallbackReturn EthercatDriver::on_error(
+  const rclcpp_lifecycle::State & /*previous_state*/)
+{
+  RCLCPP_INFO(rclcpp::get_logger("EthercatDriver"), "Error state reached");
   return CallbackReturn::SUCCESS;
 }
 
