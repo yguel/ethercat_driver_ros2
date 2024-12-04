@@ -229,9 +229,6 @@ bool EthercatDriver::deactivate_all_modules(const rclcpp::Duration & timeout)
       return false;
     }
 
-    // update EtherCAT bus
-    master_->update();
-
     // Try deactivating all modules
     bool all_deactivated = deactivate_all_modules_once();
     if (all_deactivated) {
@@ -280,9 +277,6 @@ CallbackReturn EthercatDriver::on_configure(
     // wait until next shot
     rclcpp::sleep_for(std::chrono::nanoseconds(sleep_duration.nanoseconds()));
     const rclcpp::Time time_iter_start = monotonic_clock_.now();
-
-    // update EtherCAT bus
-    master_->update();
 
     // check if all slaves are operational
     bool allOp = master_->checkAllSlavesOperational();
@@ -473,8 +467,6 @@ CallbackReturn EthercatDriver::on_activate(
   bool running = true;
   while (running) {
     const rclcpp::Time time_iter_start = monotonic_clock_.now();
-    // update EtherCAT bus
-    master_->update();
 
     // Activate all modules
     bool all_activated = true;
@@ -541,9 +533,6 @@ CallbackReturn EthercatDriver::on_cleanup(
         running = false;
         break;
       }
-
-      // update EtherCAT bus
-      master_->update();
 
       // Try calling cleanup on all modules
       bool all_cleanup = true;
