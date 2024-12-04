@@ -269,8 +269,9 @@ CallbackReturn EthercatDriver::on_configure(
   }
   RCLCPP_INFO(rclcpp::get_logger("EthercatDriver"), "Activated EtherCAT Master!");
 
-  // start after one second
-  rclcpp::Duration sleep_duration = rclcpp::Duration(1, 0);
+  // Wait during one cycle period
+  const rclcpp::Duration cycle_period = rclcpp::Duration(0, master_->getInterval());
+  rclcpp::Duration sleep_duration = cycle_period;
 
   bool running = true;
   while (running) {
@@ -294,8 +295,7 @@ CallbackReturn EthercatDriver::on_configure(
     }
 
     // calculate next shot.
-    const rclcpp::Time time_iter_end = time_iter_start +
-      rclcpp::Duration(0, master_->getInterval());
+    const rclcpp::Time time_iter_end = time_iter_start + cycle_period;
     sleep_duration = time_iter_end - monotonic_clock_.now();
   }
 
