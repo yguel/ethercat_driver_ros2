@@ -278,6 +278,9 @@ CallbackReturn EthercatDriver::on_configure(
     rclcpp::sleep_for(std::chrono::nanoseconds(sleep_duration.nanoseconds()));
     const rclcpp::Time time_iter_start = monotonic_clock_.now();
 
+    // make one communication cycle
+    master_->update();
+
     // check if all slaves are operational
     bool allOp = master_->checkAllSlavesOperational();
 
