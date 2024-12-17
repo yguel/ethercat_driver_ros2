@@ -73,6 +73,8 @@ protected:
   bool last_fault_reset_command_ = false;
   bool is_activated_ = false;
   double last_position_ = std::numeric_limits<double>::quiet_NaN();
+  double * mode_command_interface_ptr_ = nullptr;
+  ethercat_interface::EcPdoSingleInterfaceChannelManager * position_channel_ptr_ = nullptr;
 
   /** returns device state based upon the status_word */
   DeviceState deviceState(uint16_t status_word);

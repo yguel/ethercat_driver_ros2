@@ -81,6 +81,7 @@ void EcCiA402Drive::processData(size_t entry_idx, uint8_t * domain_address)
     ethercat_interface::EcPdoSingleInterfaceChannelManager *>(
     pdo_channels_info_[index]);
   ethercat_interface::EcPdoSingleInterfaceChannelManager & channel(*channel_ptr);
+
   // Special case: ControlWord
   if (channel.index == CiA402D_RPDO_CONTROLWORD) {
     if (is_operational_) {
@@ -118,6 +119,17 @@ void EcCiA402Drive::processData(size_t entry_idx, uint8_t * domain_address)
   // setup mode of operation
   if (channel.index == CiA402D_RPDO_MODE_OF_OPERATION) {
     if (mode_of_operation_ >= 0 && mode_of_operation_ <= 10) {
+      if (ModeOfOperation::MODE_NO_MODE == mode_of_operation_display_) {
+        // Look for the current command for mode of operation
+        ModeOfOperation mode_command_ =
+          static_cast<ModeOfOperation>( *mode_command_interface_ptr_ );
+        if (mode_command_ != mode_of_operation_ && mode_command_ != ModeOfOperation::MODE_NO_MODE) {
+          // Mode of operation is asked to change
+          // Set the default position to the current position
+          position_channel_ptr_->default_value = position_channel_ptr_->factor * last_position_ +
+            position_channel_ptr_->offset;
+        }
+      }
       channel.default_value = mode_of_operation_;
     }
   }
@@ -192,6 +204,18 @@ bool EcCiA402Drive::setup_from_config(YAML::Node drive_config)
   }
   if (drive_config["auto_state_transitions"]) {
     auto_state_transitions_ = drive_config["auto_state_transitions"].as<bool>();
+  }
+  // Setup the pointer to the mode of operation command interface
+  // and the position channel.
+  for (auto & channel_ptr : pdo_channels_info_) {
+    auto & channel = *channel_ptr;
+    if (channel.index == CiA402D_RPDO_MODE_OF_OPERATION) {
+      mode_command_interface_ptr_ = &command_interface_ptr_->at(channel.command_interface_index());
+    }
+    if (channel.index == CiA402D_RPDO_POSITION) {
+      position_channel_ptr_ =
+        dynamic_cast<ethercat_interface::EcPdoSingleInterfaceChannelManager *>(channel_ptr);
+    }
   }
   return true;
 }
